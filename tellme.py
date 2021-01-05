@@ -10,8 +10,8 @@ bot.owner_id = 234272777446621185
 
 @commands.is_owner()
 @bot.command()
-async def ping(ctx):
-  await ctx.send("Running")
+async def tell(ctx):
+  await ctx.send("TELL ME WHY AIN'T NOTHING BUT A HEART ACHE TELL ME WHY AIN'T NOTHING BUT A MISTAKE")
 
 @commands.is_owner()
 @bot.command()
