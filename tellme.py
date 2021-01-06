@@ -10,6 +10,7 @@ from parse import parse
 with open("../tellme-token.txt","r") as o: TOKEN=o.read().strip()
 bot = commands.Bot(">")
 bot.owner_id = 234272777446621185
+KDBot = 414925323197612032
 
 @commands.is_owner()
 @bot.command()
