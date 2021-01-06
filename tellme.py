@@ -1,8 +1,11 @@
 import discord
 import logging
 from discord.ext import commands
+from parse import parse
 # discord.AudioSource
 # permissions 53540928: send messages ... attach files, add reactions, connect, speak, move members, use voice activity
+
+# last sentence before prompt words, then "Your [T] seconds starts now"
 
 with open("../tellme-token.txt","r") as o: TOKEN=o.read().strip()
 bot = commands.Bot(">")
