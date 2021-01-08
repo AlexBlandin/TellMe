@@ -6,6 +6,7 @@ import asyncio
 import discord
 import youtube_dl
 from discord.ext import commands
+from discord.ext.commands import Context
 from parse import parse
 # discord.AudioSource
 # permissions 53540928: send messages ... attach files, add reactions, connect, speak, move members, use voice activity
@@ -69,30 +70,30 @@ class TellMe(commands.Cog):
     self.bot = bot
 
   @commands.command()
-  async def join(self, ctx, *, channel: discord.VoiceChannel):
+  async def join(self, ctx: Context, *, channel: discord.VoiceChannel):
     """Joins a voice channel"""
     if ctx.voice_client is not None:
       return await ctx.voice_client.move_to(channel)
     await channel.connect()
 
   @commands.command()
-  async def record(self, ctx, *, time):
+  async def record(self, ctx: Context, *, time):
 
     await asyncio.sleep(time)
 
   @commands.command()
-  async def setup(self, ctx, *, args):
+  async def setup(self, ctx: Context, *, args):
     """Configure TellMe - either by voice or by the command"""
 
     await asyncio.sleep(5)
 
   @commands.command()
-  async def play(self, ctx, *, query):
+  async def play(self, ctx: Context, *, query):
     """Plays the game"""
     await asyncio.sleep(5)
 
   @commands.command()
-  async def bgm(self, ctx, *, query):
+  async def bgm(self, ctx: Context, *, query):
     """Plays from a local file or url (almost anything youtube_dl supports)"""
     if query in BGM or query.strip()=="":
       track = next(Path("./audio/bgm/").glob(f"{query if query in BGM else sample(BGM,1)}.*"))
@@ -107,7 +108,7 @@ class TellMe(commands.Cog):
       await ctx.send(f"Now playing: {player.title}")
 
   @commands.command()
-  async def volume(self, ctx, volume: int):
+  async def volume(self, ctx: Context, volume: int):
     """Changes the player's volume"""
 
     if ctx.voice_client is None:
@@ -117,7 +118,7 @@ class TellMe(commands.Cog):
     await ctx.send(f"Changed volume to {volume:.0%}")
 
   @commands.command()
-  async def stop(self, ctx):
+  async def stop(self, ctx: Context):
     """Stops and disconnects the bot from voice"""
     await ctx.voice_client.disconnect()
 
@@ -125,7 +126,7 @@ class TellMe(commands.Cog):
   @play.before_invoke
   @setup.before_invoke
   @record.before_invoke
-  async def ensure_voice(self, ctx):
+  async def ensure_voice(self, ctx: Context):
     if ctx.voice_client is None:
       if ctx.author.voice:
         await ctx.author.voice.channel.connect()
@@ -136,12 +137,12 @@ class TellMe(commands.Cog):
       ctx.voice_client.stop()
   
   @join.after_invoke
-  async def alert(self, ctx):
+  @commands.command()
+  async def alert(self, ctx: Context, *, dud):
     track = next(Path("./audio/sfx/").glob(f"{sample(SFX,1)}.*"))
     source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(track))
     ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
-    print(f"Connected as {self.bot.user}")
-
+    await ctx.send(f"Ping {ctx.message.content}")
 
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), description="TellMe.py Bot for the TellMe System")
 
