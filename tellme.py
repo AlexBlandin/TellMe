@@ -109,7 +109,9 @@ class TellMe(commands.Cog):
     wave_file.touch(exist_ok=True)
     print(f"Recording {time}s in {str(wave_file)}")
     vc.listen(discord.WaveSink(str(wave_file)))
-    await asyncio.sleep(time+15)
+    await asyncio.sleep(time-10)
+    await self.alert(ctx) # Alert works, but audio was a little garbled immediately after, should be fine
+    await asyncio.sleep(10+20) # the 20 is the latency adjustment (~10-15s, so cutting noise before would be nice)
     vc.stop_listening()
     print(f"Recording complete {str(wave_file)}")
     await ctx.send("Recording complete.")
@@ -119,6 +121,11 @@ class TellMe(commands.Cog):
     """Configure TellMe - either by voice or by the command"""
 
     await asyncio.sleep(5)
+  
+  @commands.command()
+  async def tts(self, ctx: Context):
+    await ctx.send("Testing text to speech", tts=True) # TTS like this works
+    # currently no idea how to get KDBot to work
 
   @commands.command()
   async def play(self, ctx: Context, *, query):
@@ -160,12 +167,24 @@ class TellMe(commands.Cog):
     track = Path(f"./audio/sfx/{sample(SFX,1)[0]}")
     source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(track))
     ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
-    await ctx.send(f"In {ctx.voice_client.channel}")
+  
+  @commands.command()
+  async def where(self, ctx: Context):
+    if ctx.voice_client != None:
+      await ctx.send(f"In {ctx.voice_client.channel}")
+  
+  @commands.command()
+  async def wake(self, ctx: Context):
+    await self.alert(ctx)
+    await self.where(ctx)
 
   @bgm.before_invoke
   @play.before_invoke
   @setup.before_invoke
   @record.before_invoke
+  @alert.before_invoke
+  @where.before_invoke
+  @wake.before_invoke
   async def ensure_voice(self, ctx: Context):
     if ctx.voice_client is None:
       if ctx.author.voice:
