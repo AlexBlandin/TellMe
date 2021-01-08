@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 
 # Temp files
-audio/temp/
+audio/rec/
 
 # C extensions
 *.so

@@ -92,6 +92,7 @@ class TellMe(commands.Cog):
   @commands.command()
   async def join(self, ctx: Context, *, channel: discord.VoiceChannel):
     """Joins a voice channel"""
+    # await ctx.author.voice.channel.connect()
     if ctx.voice_client is not None:
       return await ctx.voice_client.move_to(channel)
     await channel.connect()
@@ -99,22 +100,19 @@ class TellMe(commands.Cog):
 
   @commands.command()
   async def record(self, ctx: Context, *, time):
+    time = float(time)
     time += ctx.voice_client.average_latency
     if not ctx.voice_client:
         await ctx.author.voice.channel.connect()
     vc = ctx.voice_client
-    wave_file = waves_folder / f"r{ulid.generate()}"
+    wave_file = waves_folder / f"r{ulid.generate()}.wav"
     wave_file.touch(exist_ok=True)
-    # fp = wave_file.open("rb")
-    # vc.listen(discord.UserFilter(discord.WaveSink(str(wave_file)), ctx.author))
+    print(f"Recording {str(wave_file)}")
     vc.listen(discord.WaveSink(str(wave_file)))
-    # await discord.utils.sleep_until(datetime.fromtimestamp(datetime.now().timestamp()+time))
     await asyncio.sleep(time)
-    discord.utils.sleep_until()
     vc.stop_listening()
-    # print(discord.File(fp, filename='record.wav'))
+    print(f"Recording complete {str(wave_file)}")
     await ctx.send("Recording complete.")
-    # await ctx.send("Here's the file.", file=discord.File(fp, filename=str(wave_file.name)))
 
 
   @commands.command()
@@ -132,7 +130,7 @@ class TellMe(commands.Cog):
   async def bgm(self, ctx: Context, *, query):
     """Plays from a local file or url (almost anything youtube_dl supports)"""
     if query in BGM or query.strip()=="":
-      track = Path(f"./audio/bgm/{query if query in BGM else sample(BGM,1)}")
+      track = Path(f"./audio/bgm/{query if query in BGM else sample(BGM,1)[0]}")
       source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(track))
       ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
       await ctx.send(f"Now playing: {query}")
@@ -160,7 +158,7 @@ class TellMe(commands.Cog):
   
   @commands.command()
   async def alert(self, ctx: Context):
-    track = Path(f"./audio/sfx/{sample(SFX,1)}")
+    track = Path(f"./audio/sfx/{sample(SFX,1)[0]}")
     source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(track))
     ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
     await ctx.send(f"In {ctx.voice_client.channel}")
@@ -198,6 +196,8 @@ async def tell(ctx):
 @commands.is_owner()
 @bot.command()
 async def logout(ctx):
+  if ctx.voice_client != None:
+    await ctx.voice_client.disconnect()
   await ctx.bot.logout()
 
 with open("../tellme-token.txt","r") as o: TOKEN=o.read().strip()
