@@ -2,6 +2,7 @@ import logging
 from random import sample
 from pathlib import Path
 from datetime import datetime
+from math import isfinite
 
 import asyncio
 import discord
@@ -101,19 +102,17 @@ class TellMe(commands.Cog):
   @commands.command()
   async def record(self, ctx: Context, *, time):
     time = float(time)
-    time += ctx.voice_client.average_latency
     if not ctx.voice_client:
         await ctx.author.voice.channel.connect()
     vc = ctx.voice_client
     wave_file = waves_folder / f"r{ulid.generate()}.wav"
     wave_file.touch(exist_ok=True)
-    print(f"Recording {str(wave_file)}")
+    print(f"Recording {time}s in {str(wave_file)}")
     vc.listen(discord.WaveSink(str(wave_file)))
-    await asyncio.sleep(time)
+    await asyncio.sleep(time+15)
     vc.stop_listening()
     print(f"Recording complete {str(wave_file)}")
     await ctx.send("Recording complete.")
-
 
   @commands.command()
   async def setup(self, ctx: Context, *, args):
