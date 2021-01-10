@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import logging
 from random import sample
 from pathlib import Path
@@ -11,6 +12,9 @@ from ulid import ULID
 from discord.ext import commands, tasks
 from discord.ext.commands import Context
 from parse import parse
+
+import speech_recognition as sr
+# pip install -U SpeechRecognition
 
 # Thanks to imayhaveborkedit's patches (semi-up to date by Gorialis) we have audio recording
 # pip install -U "discord.py[voice] @ git+https://github.com/Gorialis/discord.py@voice-recv-mk3"
