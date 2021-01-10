@@ -101,20 +101,24 @@ class TellMe(commands.Cog):
 
   @commands.command()
   async def record(self, ctx: Context, *, time):
-    time = float(time)
+    time = min(10,float(time))
     if not ctx.voice_client:
         await ctx.author.voice.channel.connect()
     vc = ctx.voice_client
     wave_file = waves_folder / f"r{ulid.generate()}.wav"
     wave_file.touch(exist_ok=True)
     print(f"Recording {time}s in {str(wave_file)}")
+    # vc.listen(discord.UserFilter(discord.WaveSink(str(wave_file)), ctx.author)) # whoever's turn it is
     vc.listen(discord.WaveSink(str(wave_file)))
     await asyncio.sleep(time-10)
     await self.alert(ctx) # Alert works, but audio was a little garbled immediately after, should be fine
-    await asyncio.sleep(10+20) # the 20 is the latency adjustment (~10-15s, so cutting noise before would be nice)
-    vc.stop_listening()
-    print(f"Recording complete {str(wave_file)}")
+    await ctx.send("10 seconds left")
+    await asyncio.sleep(10)
     await ctx.send("Recording complete.")
+    await asyncio.sleep(20) # latency adjustment (~10-15s, so cutting noise before would be nice)
+    vc.stop_listening()
+    print(f"Recording actually complete {str(wave_file)}")
+    # await ctx.send("Recording complete.")
 
   @commands.command()
   async def setup(self, ctx: Context, *, args):
