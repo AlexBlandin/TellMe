@@ -23,7 +23,7 @@ import speech_recognition as sr
 
 # last sentence before prompt words, then "Your [T] seconds starts now"
 
-# lib = next(Path("/").rglob("libopus0.so"))
+# lib = next(Path("/").rglob("libopus.so*"))
 lib = Path("/usr/lib/x86_64-linux-gnu/libopus.so.0.7.0")
 discord.opus.load_opus(lib)
 print(f"Audio working" if discord.opus.is_loaded() else "Uh oh", str(lib))

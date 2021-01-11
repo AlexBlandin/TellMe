@@ -12,6 +12,8 @@ Ensure [Python3.7](https://python.org/) is installed. Tentatively, Python3.8 sho
 
 Install [Poetry](https://python-poetry.org/), open the `$ poetry shell` in the project directory (handles venv etc.), and use `$ poetry install`.
 
+Install `libopus0`/`libopus` (depending on system) and `ffmpeg`.
+
 ## Running
 
 While in the poetry shell, use `$ poetry run python3.7 tellme.py`
