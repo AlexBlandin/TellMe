@@ -17,3 +17,5 @@ Install `libopus0`/`libopus` (depending on system) and `ffmpeg`.
 ## Running
 
 While in the poetry shell, use `$ poetry run python3.7 tellme.py`
+
+Adam Test - Cloning was a pain.
