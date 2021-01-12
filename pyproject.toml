@@ -12,6 +12,9 @@ tensorflow = "2.2.0"
 youtube_dl = "^2021.1.8"
 "discord.py" = {git = "https://github.com/Gorialis/discord.py", rev = "voice-recv-mk3"}
 SpeechRecognition = "^3.8.1"
+Keras = "2.3.1"
+deepsegment = "^2.3.1"
+multi-rake = "^0.0.1"
 
 [tool.poetry.dev-dependencies]
 
