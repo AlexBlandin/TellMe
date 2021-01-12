@@ -1,22 +1,25 @@
 import speech_recognition as sr
 
 from deepsegment import DeepSegment
-from multi_rake import Rake
+import nltk
+from rake_nltk import Rake
 
 class Extracter:
 	def __init__(self, min_words, num_keywords):
 		self.__segmenter = DeepSegment('en')
-		self.__rake = Rake(max_words=1)
+		self.__rake = Rake(max_length=1)
 		self.__r = sr.Recognizer()
 		self.__min_words = min_words
 		self.__num_keywords = num_keywords
+		nltk.download('stopwords')
 		
 	def extract(self, audio_path):
 		with sr.AudioFile(audio_path) as source:
 			audio = self.__r.record(source)
 		transcript = self.__r.recognize_google(audio)
 		sentences = self.__segmenter.segment_long(transcript)
-		keywords = [a[0] for a in self.__rake.apply(transcript)[:self.__num_keywords]]
+		self.__rake.extract_keywords_from_text(transcript)
+		keywords = self.__rake.get_ranked_phrases()[:10]
 		last_sentence = ''
 		
 		for sentence in reversed(sentences):
