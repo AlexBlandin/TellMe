@@ -19,7 +19,7 @@ class Extracter:
 		transcript = self.__r.recognize_google(audio)
 		sentences = self.__segmenter.segment_long(transcript)
 		self.__rake.extract_keywords_from_text(transcript)
-		keywords = self.__rake.get_ranked_phrases()[:10]
+		keywords = self.__rake.get_ranked_phrases()[:self.__num_keywords]
 		last_sentence = ''
 		
 		for sentence in reversed(sentences):
