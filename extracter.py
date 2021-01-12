@@ -23,7 +23,7 @@ class Extracter:
 		last_sentence = ''
 		
 		for sentence in reversed(sentences):
-			if len(last_sentence) > self.__min_words:
+			if len(last_sentence) >= self.__min_words:
 				break
 			else:
 				last_sentence = sentence + ' ' + last_sentence
