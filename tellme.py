@@ -46,8 +46,8 @@ handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w"
 handler.setFormatter(logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s"))
 logger.addHandler(handler)
 
-waves_folder = Path("./audio/rec/")
-waves_folder.mkdir(parents=True, exist_ok=True)
+recording_folder = Path("./audio/rec/")
+recording_folder.mkdir(parents=True, exist_ok=True)
 
 SFX=[f.name for f in Path("./audio/sfx/").glob("*")] # Some nice SFX to use (for "login" etc only right now)
 """
@@ -154,21 +154,18 @@ class TellMe(commands.Cog):
     if not ctx.voice_client:
         await ctx.author.voice.channel.connect()
     vc = ctx.voice_client
-    wave_file = waves_folder / f"r{ulid.generate()}.wav"
-    wave_file.touch(exist_ok=True)
-    print(f"Recording {time}s in {str(wave_file)}")
-    # vc.listen(discord.UserFilter(discord.WaveSink(str(wave_file)), ctx.author)) # whoever's turn it is
-    vc.listen(discord.WaveSink(str(wave_file)))
+    recording = recording_folder / f"r{ulid.generate()}.wav"
+    recording.touch(exist_ok=True)
+    print(f"Recording {time}s in {str(recording)}")
+    # vc.listen(discord.UserFilter(discord.WaveSink(str(audio)), ctx.author)) # whoever's turn it is
+    vc.listen(discord.WaveSink(str(recording)))
     await asyncio.sleep(time-10)
     await self.alert(ctx) # Alert works, but audio was a little garbled immediately after, should be fine
-    await ctx.send("10 seconds left")
     await asyncio.sleep(10)
-    await ctx.send("Recording complete.")
     await asyncio.sleep(20) # latency adjustment (~10-15s, so cutting noise before would be nice)
     vc.stop_listening()
-    print(f"Recording actually complete {str(wave_file)}")
-    # await ctx.send("Recording complete.")
-    return wave_file
+    print(f"Recording complete {str(recording)}")
+    return recording
 
   @commands.command()
   async def say(self, ctx: Context, *, msg: str):
@@ -252,24 +249,49 @@ class TellMe(commands.Cog):
       player.remove_roles(self.Rcanvote,self.Rspeaking)
     await self.say(ctx, msg=f"The turn order is: {' then '.join([player.display_name for player in players])}")
     await self.say(ctx, msg="I hope you enjoy playing TellMe!")
-    self.goto_talking(ctx)
+    await self.goto_talking(ctx)
     
     genre, location, item = "Horror", "Swiss Mountains", "Goat"
+    prompts, last = [], ""
     
     # Gameloop
     for r in range(min(1,self.rounds)):
+      print(f"Round {r}")
       # Roundloop
       for i, player in enumerate(players):
         player: discord.Member
-        self.bring_to_me(ctx, player)
-        player.add_roles(self.Rspeaking)
+        await self.bring_to_me(ctx, player)
+        await player.add_roles(self.Rspeaking)
         if i == 0:
-          self.say(ctx, msg=f"Tell me a {genre} story set in {location} with {'' if item[-1]=='s' else 'an' if item[0] in 'aeiouh' else 'a'} {item}")
+          await self.say(ctx, msg=f"Tell me a {genre} story set in {location} with {'' if item[-1]=='s' else 'an' if item[0] in 'aeiouh' else 'a'} {item}")
+        else:
+          await self.say(ctx, msg=f"The last sentence was: {last}")
+          await self.say(ctx, msg=f"Your prompt words are: {' '.join(prompts)}")
+        await self.say(ctx, msg=f"You will have {self.T} seconds to tell me a story. When there are ten seconds remaining, an alert will play. Your {self.T} seconds starts, now.")
+        
+        # recording = await self.record(ctx, time=90)
+        time = min(15,float(self.T))
+        vc = ctx.voice_client
+        recording = recording_folder / f"r{ulid.generate()}.wav"
+        recording.touch(exist_ok=True)
+        print(f"Recording {time}s in {str(recording)}")
+        vc.listen(discord.WaveSink(str(recording)))
+        await asyncio.sleep(time-10)
+        await self.alert(ctx)
+        await asyncio.sleep(10)
+        # "Done" but not really, latency compensation so don't close yet
+        await self.say(ctx, msg="Your time is up.")
+        
+        await asyncio.sleep(20) # latency adjustment (~10-15s, so cutting noise before would be nice)
+        vc.stop_listening()
+        print(f"Recording complete {str(recording)}")
         
         
-        player.remove_roles(self.Rspeaking)
-        player.add_roles(self.Rcanvote)
-        self.move_back(ctx, player)
+        
+        
+        await player.remove_roles(self.Rspeaking)
+        await player.add_roles(self.Rcanvote)
+        await self.move_back(ctx, player)
       # Round cleanup
       for player in players:
         player.remove_roles(self.Rcanvote)
