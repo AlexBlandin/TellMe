@@ -14,6 +14,7 @@ from ulid import ULID
 from discord.ext import commands, tasks
 from discord.ext.commands import Context
 from parse import parse
+from gtts import gTTS
 
 import speech_recognition as sr
 # pip install -U SpeechRecognition
@@ -173,10 +174,17 @@ class TellMe(commands.Cog):
   @commands.command()
   async def say(self, ctx: Context, *, msg: str):
     f = Path(f"./audio/rec/r{ulid.generate()}.wav")
+    # gf = Path(f"./audio/rec/r{ulid.generate()}.opus")
     f.touch(exist_ok=True)
     
     # TTS section
     importlib.reload(pyttsx3) # bc. pyttsx3 deadlocks on the second runAndWait
+    
+    # Gtts
+    # tts = gTTS(msg)
+    # Works with whatever encoders you have I believe Wav if you want
+    # tts.save(str(gf))
+    
     tts = pyttsx3.init()
     tts.setProperty("rate", 125) # espeak is low quality
     tts.setProperty("voice", tts.getProperty("voices")[2].id)
