@@ -315,9 +315,9 @@ class TellMe(commands.Cog):
           ping = await self.Tvoting.send("@TellMe-Voting  Please vote on the following prompts by selecting the corresponding number:")
           message = await self.Tvoting.send(" ".join([f"{i}. {p} " for i, p in enumerate(keywords,start=1)]))
           reactions = {}
-          for n, e in enumerate(["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]):
+          for k, (n, e) in zip(keywords, enumerate(["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"])):
             await message.add_reaction(e)
-            await asyncio.sleep(0.33)
+            await asyncio.sleep(0.5)
             reactions[e] = n
           await asyncio.sleep(20) # 20s voting period for voting
           reacts = message.reactions
