@@ -242,6 +242,8 @@ class TellMe(commands.Cog):
     players = vc.channel.members
     players = sample(players, len(players)) # shuffle
     players = [player for player in players if player.bot==False]
+    for player in players:
+      player.remove_roles(self.Rspeaking, self.Rcanvote)
     print(),print(),print(),print()
     turn_order = f"The turn order is: {' then '.join([player.display_name for player in players])}"
     print(turn_order)
@@ -267,6 +269,7 @@ class TellMe(commands.Cog):
         await self.bring_to_me(ctx, player)
         print("Add roles")
         await player.add_roles(self.Rspeaking)
+        await asyncio.sleep(5) # wait to see if it moves
         print("Rundown")
         if i == 0:
           s = await self.say(ctx, msg=f"Tell me a {genre} story set in {location} with {'' if item[-1]=='s' else 'an' if item[0] in 'aeiouh' else 'a'} {item}")
@@ -283,7 +286,7 @@ class TellMe(commands.Cog):
         print("Start")
         
         # recording = await self.record(ctx, time=90)
-        time = min(15,float(self.T))
+        time = max(15,float(self.T))
         vc = ctx.voice_client
         recording = recording_folder / f"r{ulid.generate()}.wav"
         recording.touch(exist_ok=True)
@@ -296,13 +299,14 @@ class TellMe(commands.Cog):
         s = await self.say(ctx, msg="Your time is up.")
         audio_files.append(s)
         if i != len(players)-1:
-          await self.say(ctx, msg="Momentarily, you will be  moved back to the lobby, and invited to vote for the next player's prompts. The voting channel will soon appear for you.")
+          await self.say(ctx, msg="Momentarily, you will be moved back to the lobby, and invited to vote for the next player's prompts. The voting channel will soon appear for you.")
         await player.add_roles(self.Rcanvote)
+        await asyncio.sleep(10)
         await self.move_back(ctx, player)
-        await asyncio.sleep(20) # latency adjustment (~10-15s, so cutting noise before would be nice)
+        await asyncio.sleep(10) # latency adjustment (~10-15s, so cutting noise before would be nice)
         vc.stop_listening()
         print(f"Recording complete {str(recording)}")
-        keywords, last = extractor.extract(recording)
+        keywords, last = extractor.extract(str(recording))
         await player.remove_roles(self.Rspeaking)
         if i != len(players)-1:
           ping = await self.Tvoting.send("@TellMe-Voting  Please vote on the following prompts by selecting the corresponding number:")
