@@ -313,7 +313,8 @@ class TellMe(commands.Cog):
           message = await self.Tvoting.send(" ".join([f"{i}. {p}" for i, p in enumerate(keywords,start=1)]))
           reacts = []
           for e in ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]:
-            react = await message.add_reaction(e)
+            react = await bot.add_reaction(message, e)
+            await asyncio.sleep(0.33)
             reacts.append(react)
           await asyncio.sleep(20) # 20s voting period for voting
           prompts = sorted(reacts, key= lambda react: react.count, reverse=True)[:4]
