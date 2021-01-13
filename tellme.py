@@ -179,7 +179,7 @@ class TellMe(commands.Cog):
     return f
 
   @commands.command()
-  async def play(self, ctx: Context, *, query):
+  async def play(self, ctx: Context):
     """Plays TellMe"""
     """
     assume everyone is assembled in the "lobby" voice & text channel,
