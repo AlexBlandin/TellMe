@@ -303,7 +303,7 @@ class TellMe(commands.Cog):
       # Round cleanup
       for player in players:
         player.remove_roles(self.Rcanvote, self.Rspeaking)
-      await self.goto_lobby()
+      await self.goto_lobby(ctx)
     # Game wrapup
     c = Path(f"./audio/rec/c{ulid.generate()}.txt")
     with open(c, "w+") as w:
