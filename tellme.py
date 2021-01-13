@@ -235,6 +235,7 @@ class TellMe(commands.Cog):
     print(),print(),print(),print()
     turn_order = f"The turn order is: {' then '.join([player.display_name for player in players])}"
     print(turn_order)
+    print(),print(),print(),print()
     await ctx.send(turn_order)
     await self.say(ctx, msg=turn_order)
     await self.say(ctx, msg="I hope you enjoy playing TellMe!")
@@ -250,15 +251,17 @@ class TellMe(commands.Cog):
     
     # Gameloop
     for r in range(min(1,self.rounds)):
+      print(),print(),print(),print()
       print(f"Round {r}")
+      print(),print(),print(),print()
       # Roundloop
       for i, player in enumerate(players):
-        print("Come to me")
         await self.bring_to_me(ctx, player)
-        print("Add roles")
         await player.add_roles(self.Rspeaking)
         await asyncio.sleep(5) # wait to see if it moves
+        print(),print(),print(),print()
         print("Rundown")
+        print(),print(),print(),print()
         if i == 0:
           s = await self.say(ctx, msg=f"Tell me a {genre} story set in {location} with {'' if item[-1]=='s' else 'an' if item[0] in 'aeiouh' else 'a'} {item}")
           audio_files.append(s)
@@ -271,18 +274,22 @@ class TellMe(commands.Cog):
           print(),print(),print(),print()
           s = await self.say(ctx, msg=f"Your prompt words are. {', '.join(prompts)}.")
           audio_files.append(s)
-        
+        print(),print(),print(),print()
         print("Get ready")
+        print(),print(),print(),print()
         s = await self.say(ctx, msg=f"You will have {self.T} seconds to tell me a story. You should hear an alert when there are ten seconds remaining. Your {self.T} seconds starts, now.")
         audio_files.append(s)
+        print(),print(),print(),print()
         print("Start")
-        
+        print(),print(),print(),print()
         # recording = await self.record(ctx, time=90)
         time = max(15,float(self.T))
         vc = ctx.voice_client
         recording = recording_folder / f"r{ulid.generate()}.wav"
         recording.touch(exist_ok=True)
+        print(),print(),print(),print()
         print(f"Recording {time}s in {str(recording)}")
+        print(),print(),print(),print()
         vc.listen(discord.WaveSink(str(recording)))
         await asyncio.sleep(time-10)
         await self.alert(ctx)
@@ -300,7 +307,9 @@ class TellMe(commands.Cog):
         # await asyncio.sleep(15) # latency adjustment (not necessary now we actually spend time talking?)
         vc.stop_listening()
         await player.remove_roles(self.Rspeaking)
+        print(),print(),print(),print()
         print(f"Recording complete {str(recording)}")
+        print(),print(),print(),print()
         keywords, last = extractor.extract(str(recording))
         if i != len(players)-1:
           ping = await self.Tvoting.send("@TellMe-Voting  Please vote on the following prompts by selecting the corresponding number:")
@@ -338,6 +347,9 @@ class TellMe(commands.Cog):
     s = Path(f"./audio/rec/o{u}.webm")
     run(["ffmpeg", "-f", "concat", "-i", c, "-c", "copy", str(o)])
     run(["ffmpeg", "-i", o, "-c:a", "libopus", "-b:a", "128k", str(s)])
+    print(),print(),print(),print()
+    print("Done!")
+    print(),print(),print(),print()
     await self.Tlobby.send("Thank you for playing Tell Me, attached is the combined session recording", file=discord.File(str(s), filename=f"session-{datetime.now():%Y-%m-%d-%H-%M-%S}"))
     # Game cleanup
     await ctx.voice_client.disconnect()
@@ -370,9 +382,10 @@ class TellMe(commands.Cog):
       ctx.voice_client.stop()
 
 intent = discord.Intents.default()
-# intent: discord.Intents
+intent: discord.Intents
 intent.members=True
 intent.voice_states=True
+intent.reactions=True
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), description="TellMe.py Bot for the TellMe System", intents=intent, chunk_guilds_at_startup=True)
 
 @bot.event
