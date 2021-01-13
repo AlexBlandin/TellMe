@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import logging
+import importlib
 from random import sample
 from pathlib import Path
 from datetime import datetime
@@ -7,6 +8,7 @@ from math import isfinite
 
 import asyncio
 import discord
+import pyttsx3
 import youtube_dl
 from ulid import ULID
 from discord.ext import commands, tasks
@@ -23,8 +25,6 @@ from extractor import Extractor
 
 # permissions 53540928: send messages ... attach files, add reactions, connect, speak, move members, use voice activity
 
-# last sentence before prompt words, then "Your [T] seconds starts now"
-
 # refactor into `!play` command that triggers everything, TellMe cog is automated otherwise
 
 
@@ -33,6 +33,11 @@ from extractor import Extractor
 lib = Path("/usr/lib/x86_64-linux-gnu/libopus.so.0.7.0")
 discord.opus.load_opus(lib)
 print(f"Audio working" if discord.opus.is_loaded() else "Uh oh", str(lib))
+
+tts = pyttsx3.init()
+tts.setProperty("rate", 125)
+
+extractor = Extractor()
 
 ulid = ULID()
 logger = logging.getLogger("discord")
@@ -99,17 +104,51 @@ class YTDLSource(discord.PCMVolumeTransformer):
 class TellMe(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
+    self.Vlobby, self.Vtalking = None, None # Voice Channels
+    self.Tlobby, self.Tvoting = None, None # Text Channel
+    self.Rcanvote, self.Rspeaking = None, None # Roles
+    self.rounds, self.T = 1, 90
 
   @commands.command()
   async def join(self, ctx: Context, *, channel: discord.VoiceChannel):
     """Joins a voice channel"""
-    # await ctx.author.voice.channel.connect()
     if ctx.voice_client is not None:
-      return await ctx.voice_client.move_to(channel)
-    await channel.connect()
+      await ctx.voice_client.move_to(channel)
+    elif channel is not None:
+      await channel.connect()
+    else:
+      await ctx.author.voice.channel.connect()
     await self.alert(ctx)
+  
+  @commands.command()
+  async def volume(self, ctx: Context, volume: int):
+    """Changes the player's volume"""
+
+    if ctx.voice_client is None:
+      return await ctx.send("Not connected to a voice channel.")
+    ctx.voice_client.source.volume = volume / 100
+    await ctx.send(f"Changed volume to {volume:.0%}")
+
+  async def alert(self, ctx: Context):
+    track = Path(f"./audio/sfx/{sample(SFX,1)[0]}")
+    source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(track))
+    ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
 
   @commands.command()
+  async def bgm(self, ctx: Context, *, query):
+    """Plays from a local file or url (almost anything youtube_dl supports)"""
+    if query in BGM or query.strip()=="":
+      track = Path(f"./audio/bgm/{query if query in BGM else sample(BGM,1)[0]}")
+      source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(track))
+      ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
+      await ctx.send(f"Now playing: {query}")
+    else:
+      async with ctx.typing():
+        player = await YTDLSource.from_url(query, loop=self.bot.loop)
+        ctx.voice_client.play(player, after=lambda e: print(f"Player error: {e}") if e else None)
+
+      await ctx.send(f"Now playing: {player.title}")
+
   async def record(self, ctx: Context, *, time):
     time = min(10,float(time))
     if not ctx.voice_client:
@@ -129,83 +168,150 @@ class TellMe(commands.Cog):
     vc.stop_listening()
     print(f"Recording actually complete {str(wave_file)}")
     # await ctx.send("Recording complete.")
+    return wave_file
 
   @commands.command()
-  async def setup(self, ctx: Context, *, args):
-    """Configure TellMe - either by voice or by the command"""
-
-    await asyncio.sleep(5)
-  
-  @commands.command()
-  async def tts(self, ctx: Context):
-    await ctx.send("Testing text to speech", tts=True) # TTS like this works
-    # currently no idea how to get KDBot to work
+  async def say(self, ctx: Context, *, msg: str):
+    f = Path(f"./audio/rec/r{ulid.generate()}.wav")
+    f.touch(exist_ok=True)
+    
+    # TTS section
+    importlib.reload(pyttsx3) # bc. pyttsx3 deadlocks on the second runAndWait
+    tts = pyttsx3.init()
+    tts.setProperty("rate", 125) # espeak is low quality
+    tts.setProperty("voice", tts.getProperty("voices")[2].id)
+    tts.save_to_file(msg, filename=str(f)) # but if we can save out then +1
+    tts.runAndWait() # this blocks, we would like something fast
+    tts.stop()
+    
+    # await ctx.send(msg) # Text option
+    source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(f))
+    ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
+    
+    return f
+    
+    
 
   @commands.command()
   async def play(self, ctx: Context, *, query):
-    """Plays the game"""
-    await asyncio.sleep(5)
-
-  @commands.command()
-  async def bgm(self, ctx: Context, *, query):
-    """Plays from a local file or url (almost anything youtube_dl supports)"""
-    if query in BGM or query.strip()=="":
-      track = Path(f"./audio/bgm/{query if query in BGM else sample(BGM,1)[0]}")
-      source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(track))
-      ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
-      await ctx.send(f"Now playing: {query}")
-    else:
-      async with ctx.typing():
-        player = await YTDLSource.from_url(query, loop=self.bot.loop)
-        ctx.voice_client.play(player, after=lambda e: print(f"Player error: {e}") if e else None)
-
-      await ctx.send(f"Now playing: {player.title}")
-
-  @commands.command()
-  async def volume(self, ctx: Context, volume: int):
-    """Changes the player's volume"""
-
-    if ctx.voice_client is None:
-      return await ctx.send("Not connected to a voice channel.")
-
-    ctx.voice_client.source.volume = volume / 100
-    await ctx.send(f"Changed volume to {volume:.0%}")
-
-  @commands.command()
-  async def stop(self, ctx: Context):
-    """Stops and disconnects the bot from voice"""
+    """Plays TellMe"""
+    """
+    assume everyone is assembled in the "lobby" voice & text channel,
+    one user (me) will type `!play`,
+      specifies gamemode (for now, just controls number of rounds in a game) (not important for now)
+        "basic" is 1 round per game
+        "twoturn" is 2 rounds per game (not important for now)
+    TellMe will connect to the author's location,
+      query the channel for the list of users,
+      clear any TellMe game roles ("canvote" & "speaking"),
+      assign a random play order,
+      announce the play order,
+      move into the "speaking" voice & text channel
+    gameloop begins (individual turns of all players forming a round),
+      TellMe knows the k'th player,
+      gives them the "speaking" role,
+      moves them into the "speaking" channels,
+      gives them the rundown:
+        f"The last sentence was: {ls}" if k!=0 else f"Tell me a {genre} story set in {location} with {item}"
+        f"Your prompt words are: {' '.join(prompts)}"
+        f"You will have {T} seconds to tell me a story. When there are ten seconds remaining, an alert will play."
+        f"Your {T} seconds starts, now."
+      records for 90s (bgm optional),
+        alert at 10s remaining,
+      announces that time is up,
+        assigns them the "canvote" role,
+        invites them to move back to the lobby and look at the voting text channel to vote momentatily,
+        forcefully moves them and removes "speaking" role,
+      runs recording through extractor,
+      puts keywords up for voting,
+        message with reacts 1 through 10,
+        alert those in lobby by text and voice that they have 20s to vote,
+        wait 20s,
+        tally votes,
+        `prompts = ` top 4 (ties settled by random sample),
+        thank those who voted and delete the vote message,
+      loop,
+    end of round,
+      unassigns "canvote" role,
+      (that's all for now), 
+    end of game,
+      report back the combined story,
+        including TellMe's rundown and the votes
+      upload stitched together audio (.opus in a .webm for discord embedding?),
+      thank,
+      cleanup,
+        remove TellMe game roles,
+    disconnect from voice.
+    """
+    self.join(ctx, channel=None)
+    vc = ctx.voice_client
+    players = self.Vlobby.members
+    players = sample(players, len(players)) # shuffle
+    for player in players:
+      # player.add_roles()
+      player.remove_roles(self.Rcanvote,self.Rspeaking)
+    await self.say(ctx, msg=f"The turn order is: {' then '.join([player.display_name for player in players])}")
+    await self.say(ctx, msg="I hope you enjoy playing TellMe!")
+    self.goto_talking(ctx)
+    
+    genre, location, item = "Horror", "Swiss Mountains", "Goat"
+    
+    # Gameloop
+    for r in range(min(1,self.rounds)):
+      # Roundloop
+      for i, player in enumerate(players):
+        player: discord.Member
+        self.bring_to_me(ctx, player)
+        player.add_roles(self.Rspeaking)
+        if i == 0:
+          self.say(ctx, msg=f"Tell me a {genre} story set in {location} with {'' if item[-1]=='s' else 'an' if item[0] in 'aeiouh' else 'a'} {item}")
+        
+        
+        player.remove_roles(self.Rspeaking)
+        player.add_roles(self.Rcanvote)
+        self.move_back(ctx, player)
+      # Round cleanup
+      for player in players:
+        player.remove_roles(self.Rcanvote)
+    ...
+    ...
+    ...
+    
+    # message = await bot.send_message(channel, " ".join([f"{i}. {p}" for i, p in enumerate(prompts,start=1)])
+    # reacts = [await bot.add_reaction(message, e) for e in ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "keycap_ten"]]
     await ctx.voice_client.disconnect()
-  
-  @commands.command()
-  async def alert(self, ctx: Context):
-    track = Path(f"./audio/sfx/{sample(SFX,1)[0]}")
-    source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(track))
-    ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
-  
-  @commands.command()
-  async def where(self, ctx: Context):
-    if ctx.voice_client != None:
-      await ctx.send(f"In {ctx.voice_client.channel}")
-  
-  @commands.command()
-  async def wake(self, ctx: Context):
-    await self.alert(ctx)
-    await self.where(ctx)
 
-  @bgm.before_invoke
+  async def goto_lobby(self, ctx: Context):
+    await ctx.voice_client.move_to(self.Vlobby)
+  
+  async def goto_talking(self, ctx: Context):
+    await ctx.voice_client.move_to(self.Vtalking)
+
+  async def bring_to_me(self, ctx: Context, user: discord.Member):
+    "Bring a user to the bot's current location"
+    await user.move_to(ctx.voice_client.channel)
+  
+  async def move_back(self, ctx: Context, user: discord.Member):
+    "Move a user back to the lobby"
+    await user.move_to(self.Vlobby)
+
   @play.before_invoke
-  @setup.before_invoke
-  @record.before_invoke
-  @alert.before_invoke
-  @where.before_invoke
-  @wake.before_invoke
+  async def ensure_roles(self, ctx: Context):
+    dget, server = discord.utils.get, ctx.guild
+    vchannels, tchannels, roles = server.voice_channels, server.text_channels, server.roles
+    self.Vlobby, self.Vtalking = dget(vchannels, name="Waiting Rooms"), dget(vchannels, name="Talking")
+    self.Tlobby, self.Tvoting = ctx.channel, dget(tchannels, name="voting")
+    self.Rcanvote, self.Rspeaking = dget(roles, name="TellMe-Voting"), dget(roles, name="TellMe-Speaking")
+  
+  @say.before_invoke
+  @play.before_invoke
   async def ensure_voice(self, ctx: Context):
     if ctx.voice_client is None:
       if ctx.author.voice:
         await ctx.author.voice.channel.connect()
       else:
-        await ctx.send("I am not connected to a voice channel.")
-        raise commands.CommandError("Not connected to a voice channel.")
+        await ctx.send("I do not know which voice channel to join.")
+        raise commands.CommandError("Unspecified voice channel.")
     elif ctx.voice_client.is_playing():
       ctx.voice_client.stop()
 
@@ -218,12 +324,6 @@ async def on_ready():
 
 bot.add_cog(TellMe(bot))
 bot.owner_id = 234272777446621185
-KDBot = 414925323197612032
-
-@commands.is_owner()
-@bot.command()
-async def tell(ctx):
-  await ctx.send("TELL ME WHY AIN'T NOTHING BUT A HEART ACHE TELL ME WHY AIN'T NOTHING BUT A MISTAKE")
 
 @commands.is_owner()
 @bot.command()
