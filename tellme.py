@@ -277,6 +277,10 @@ class TellMe(commands.Cog):
         else:
           s = await self.say(ctx, msg=f"The last sentence was. {last}.")
           audio_files.append(s)
+          print(),print(),print(),print()
+          print("Prompts:")
+          print(prompts)
+          print(),print(),print(),print()
           s = await self.say(ctx, msg=f"Your prompt words are. {', '.join(prompts)}.")
           audio_files.append(s)
         
@@ -300,10 +304,12 @@ class TellMe(commands.Cog):
         audio_files.append(s)
         if i != len(players)-1:
           await self.say(ctx, msg="Momentarily, you will be moved back to the lobby, and invited to vote for the next player's prompts. The voting channel will soon appear for you.")
+        else:
+          await self.say(ctx, msg="Momentarily, you will be moved back to the lobby, as the round has ended.")
         await player.add_roles(self.Rcanvote)
-        await asyncio.sleep(10)
+        await asyncio.sleep(5)
         await self.move_back(ctx, player)
-        await asyncio.sleep(10) # latency adjustment (~10-15s, so cutting noise before would be nice)
+        # await asyncio.sleep(15) # latency adjustment (not necessary now we actually spend time talking?)
         vc.stop_listening()
         await player.remove_roles(self.Rspeaking)
         print(f"Recording complete {str(recording)}")
@@ -328,14 +334,13 @@ class TellMe(commands.Cog):
     # Game wrapup
     c = Path(f"./audio/rec/c{ulid.generate()}.txt")
     with open(c, "w+") as w:
-      w.write(["\n".join(audio_files)])
+      w.write(["\n".join([str(audio_file) for audio_file in audio_files])])
       w.write("\n")
     u = ulid.generate()
     o = Path(f"./audio/rec/o{u}.wav")
     s = Path(f"./audio/rec/o{u}.webm")
     run(["ffmpeg", "-f", "concat", "-i", c, "-c", "copy", str(o)])
     run(["ffmpeg", "-i", o, "-c:a", "libopus", "-b:a", "128k", str(s)])
-    self.Tlobby:discord.TextChannel
     await self.Tlobby.send("Thank you for playing Tell Me, attached is the combined session recording", file=discord.File(str(s), filename=f"session-{datetime.now():%Y-%m-%d-%H-%M-%S}"))
     # Game cleanup
     await ctx.voice_client.disconnect()
