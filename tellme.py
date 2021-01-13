@@ -248,8 +248,10 @@ class TellMe(commands.Cog):
     await ctx.send(turn_order)
     await self.say(ctx, msg=turn_order)
     await self.say(ctx, msg="I hope you enjoy playing TellMe!")
-    await asyncio.sleep(1)
+    await asyncio.sleep(0.5)
     await self.goto_talking(ctx)
+    
+    await asyncio.sleep(5) # wait to see if it moves
     
     genre, location, item = "Horror", "Swiss Mountains", "Goat"
     prompts, last = [], ""
@@ -342,6 +344,7 @@ class TellMe(commands.Cog):
 
   async def bring_to_me(self, ctx: Context, user: discord.Member):
     "Bring a user to the bot's current location"
+    print(ctx.voice_client.channel)
     await user.move_to(ctx.voice_client.channel)
   
   async def move_back(self, ctx: Context, user: discord.Member):
