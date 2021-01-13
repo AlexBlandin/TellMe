@@ -4,8 +4,8 @@ from deepsegment import DeepSegment
 import nltk
 from rake_nltk import Rake
 
-class Extracter:
-	def __init__(self, min_words, num_keywords):
+class Extractor:
+	def __init__(self, min_words=15, num_keywords=10):
 		self.__segmenter = DeepSegment('en')
 		self.__rake = Rake(max_length=1)
 		self.__r = sr.Recognizer()
@@ -33,7 +33,7 @@ class Extracter:
 		
 if __name__ == "__main__":
 	# Min words in last sentence, number keywords
-	extracter = Extracter(15,10)
+	extracter = Extractor(15,10)
 	keywords, last_sentence = extracter.extract('test/adam.flac')
 	print(keywords)
 	print(last_sentence)
