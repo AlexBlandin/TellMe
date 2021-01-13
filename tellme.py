@@ -319,6 +319,7 @@ class TellMe(commands.Cog):
             await message.add_reaction(e)
             await asyncio.sleep(0.5)
             reactions[e] = n
+            print(k, n, e)
           await asyncio.sleep(20) # 20s voting period for voting
           reacts = message.reactions
           prompts = [keywords[reactions[react.emoji]] for react in sorted(reacts, key= lambda react: react.count, reverse=True)[:4]]
