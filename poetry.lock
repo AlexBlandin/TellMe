@@ -202,6 +202,23 @@ six = ">=1.5.2"
 protobuf = ["grpcio-tools (>=1.34.0)"]
 
 [[package]]
+name = "gtts"
+version = "2.2.1"
+description = "gTTS (Google Text-to-Speech), a Python library and CLI tool to interface with Google Translate text-to-speech API"
+category = "main"
+optional = false
+python-versions = ">=2.7"
+
+[package.dependencies]
+click = "*"
+requests = "*"
+six = "*"
+
+[package.extras]
+docs = ["sphinx", "sphinx-autobuild", "sphinx-rtd-theme", "sphinx-click", "towncrier"]
+tests = ["pytest (>=6.1)", "pytest-cov", "flake8", "testfixtures", "mock", "six"]
+
+[[package]]
 name = "h5py"
 version = "2.10.0"
 description = "Read and write HDF5 files from Python"
@@ -2573,7 +2590,7 @@ testing = ["pytest (>=3.5,!=3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake
 [metadata]
 lock-version = "1.1"
 python-versions = "~3.7 || ~3.8"
-content-hash = "7ac5fad9afa07543f48a08d737b5f818f29714e5173e03eca7f6229813695804"
+content-hash = "359548bc7ec97fefaedd2caf6e58dd4dc763f62d2297a558326b3ff71296f60e"
 
 [metadata.files]
 absl-py = [
@@ -2719,6 +2736,10 @@ grpcio = [
     {file = "grpcio-1.34.0-cp39-cp39-win32.whl", hash = "sha256:d16f7f5a10bf24640fa639974d409c220e587b3e2fa2620af00d43ba36dafc2c"},
     {file = "grpcio-1.34.0-cp39-cp39-win_amd64.whl", hash = "sha256:25958bd7c6773e6de79781cc0d6f19d0c82332984dd07ef238889e93485d5afc"},
     {file = "grpcio-1.34.0.tar.gz", hash = "sha256:f98f746cacbaa681de0bcd90d7aa77b440e3e1327a9988f6a2b580d54e27d4c3"},
+]
+gtts = [
+    {file = "gTTS-2.2.1-py3-none-any.whl", hash = "sha256:900d086f3ac9534f53bf46e815697d8968a2495d1594872bba82c13eeb5ddd06"},
+    {file = "gTTS-2.2.1.tar.gz", hash = "sha256:93d8f386336c81d3b1d257ed0b4d5ef72660dc38484b0e0df7849b161cbe6324"},
 ]
 h5py = [
     {file = "h5py-2.10.0-cp27-cp27m-macosx_10_6_intel.whl", hash = "sha256:ecf4d0b56ee394a0984de15bceeb97cbe1fe485f1ac205121293fc44dcf3f31f"},
