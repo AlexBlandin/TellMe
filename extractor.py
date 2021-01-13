@@ -33,7 +33,7 @@ class Extractor:
 		
 if __name__ == "__main__":
 	# Min words in last sentence, number keywords
-	extracter = Extractor(15,10)
-	keywords, last_sentence = extracter.extract('test/adam.flac')
+	extractor = Extractor(15,10)
+	keywords, last_sentence = extractor.extract('test/adam.flac')
 	print(keywords)
 	print(last_sentence)

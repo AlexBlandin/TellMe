@@ -19,9 +19,15 @@ import speech_recognition as sr
 # Thanks to imayhaveborkedit's patches (semi-up to date by Gorialis) we have audio recording
 # pip install -U "discord.py[voice] @ git+https://github.com/Gorialis/discord.py@voice-recv-mk3"
 
+from extractor import Extractor
+
 # permissions 53540928: send messages ... attach files, add reactions, connect, speak, move members, use voice activity
 
 # last sentence before prompt words, then "Your [T] seconds starts now"
+
+# refactor into `!play` command that triggers everything, TellMe cog is automated otherwise
+
+
 
 # lib = next(Path("/").rglob("libopus.so*"))
 lib = Path("/usr/lib/x86_64-linux-gnu/libopus.so.0.7.0")
