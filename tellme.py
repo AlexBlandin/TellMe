@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
+import json
 import logging
 import importlib
 from random import sample
 from pathlib import Path
 from datetime import datetime
 from math import isfinite
+from subprocess import run, PIPE
+from datetime import datetime
 
 import asyncio
 import discord
@@ -33,9 +36,6 @@ from extractor import Extractor
 lib = Path("/usr/lib/x86_64-linux-gnu/libopus.so.0.7.0")
 discord.opus.load_opus(lib)
 print(f"Audio working" if discord.opus.is_loaded() else "Uh oh", str(lib))
-
-tts = pyttsx3.init()
-tts.setProperty("rate", 125)
 
 extractor = Extractor()
 
@@ -172,10 +172,10 @@ class TellMe(commands.Cog):
     f = Path(f"./audio/rec/r{ulid.generate()}.wav")
     f.touch(exist_ok=True)
     gTTS(msg).save(str(f))
-    # await ctx.send(msg) # Text option
+    wait = float(json.loads(run(["ffprobe", "-i", str(f), "-loglevel", "quiet", "-print_format", "json", "-show_streams"], encoding="utf-8", stdout=PIPE).stdout)["streams"][0]["duration"]) + 0.5
     source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(f))
     ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
-    
+    await asyncio.sleep(wait) # wait for speech to pass
     return f
 
   @commands.command()
@@ -238,25 +238,32 @@ class TellMe(commands.Cog):
       player.remove_roles(self.Rcanvote,self.Rspeaking)
     await self.say(ctx, msg=f"The turn order is: {' then '.join([player.display_name for player in players])}")
     await self.say(ctx, msg="I hope you enjoy playing TellMe!")
+    await asyncio.sleep(1)
     await self.goto_talking(ctx)
     
     genre, location, item = "Horror", "Swiss Mountains", "Goat"
     prompts, last = [], ""
+    
+    audio_files = [] # in order of occurence
     
     # Gameloop
     for r in range(min(1,self.rounds)):
       print(f"Round {r}")
       # Roundloop
       for i, player in enumerate(players):
-        player: discord.Member
         await self.bring_to_me(ctx, player)
         await player.add_roles(self.Rspeaking)
         if i == 0:
-          await self.say(ctx, msg=f"Tell me a {genre} story set in {location} with {'' if item[-1]=='s' else 'an' if item[0] in 'aeiouh' else 'a'} {item}")
+          s = await self.say(ctx, msg=f"Tell me a {genre} story set in {location} with {'' if item[-1]=='s' else 'an' if item[0] in 'aeiouh' else 'a'} {item}")
+          audio_files.append(s)
         else:
-          await self.say(ctx, msg=f"The last sentence was: {last}")
-          await self.say(ctx, msg=f"Your prompt words are: {' '.join(prompts)}")
-        await self.say(ctx, msg=f"You will have {self.T} seconds to tell me a story. When there are ten seconds remaining, an alert will play. Your {self.T} seconds starts, now.")
+          s = await self.say(ctx, msg=f"The last sentence was. {last}.")
+          audio_files.append(s)
+          s = await self.say(ctx, msg=f"Your prompt words are. {', '.join(prompts)}.")
+          audio_files.append(s)
+        
+        s = await self.say(ctx, msg=f"You will have {self.T} seconds to tell me a story. You should hear an alert when there are ten seconds remaining. Your {self.T} seconds starts, now.")
+        audio_files.append(s)
         
         # recording = await self.record(ctx, time=90)
         time = min(15,float(self.T))
@@ -269,27 +276,47 @@ class TellMe(commands.Cog):
         await self.alert(ctx)
         await asyncio.sleep(10)
         # "Done" but not really, latency compensation so don't close yet
-        await self.say(ctx, msg="Your time is up.")
-        
+        s = await self.say(ctx, msg="Your time is up.")
+        audio_files.append(s)
+        if i != len(players)-1:
+          await self.say(ctx, msg="Momentarily, you will be  moved back to the lobby, and invited to vote for the next player's prompts. The voting channel will soon appear for you.")
+        await player.add_roles(self.Rcanvote)
+        await self.move_back(ctx, player)
         await asyncio.sleep(20) # latency adjustment (~10-15s, so cutting noise before would be nice)
         vc.stop_listening()
         print(f"Recording complete {str(recording)}")
-        
-        
-        
-        
+        keywords, last = extractor.extract(recording)
         await player.remove_roles(self.Rspeaking)
-        await player.add_roles(self.Rcanvote)
-        await self.move_back(ctx, player)
+        if i != len(players)-1:
+          ping = await self.Tvoting.send("@TellMe-Voting  Please vote on the following prompts by selecting the corresponding number:")
+          message = await self.Tvoting.send(" ".join([f"{i}. {p}" for i, p in enumerate(keywords,start=1)]))
+          reacts = []
+          for e in ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]:
+            react = await message.add_reaction(e)
+            reacts.append(react)
+          await asyncio.sleep(20) # 20s voting period for voting
+          prompts = sorted(reacts, key= lambda react: react.count, reverse=True)[:4]
+          thanks = await self.Tvoting.send("Thank you for voting")
+          await message.delete(delay=2)
+          await ping.delete()
+          await thanks.delete()
       # Round cleanup
       for player in players:
-        player.remove_roles(self.Rcanvote)
-    ...
-    ...
-    ...
-    
-    # message = await bot.send_message(channel, " ".join([f"{i}. {p}" for i, p in enumerate(prompts,start=1)])
-    # reacts = [await bot.add_reaction(message, e) for e in ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "keycap_ten"]]
+        player.remove_roles(self.Rcanvote, self.Rspeaking)
+      await self.goto_lobby()
+    # Game wrapup
+    c = Path(f"./audio/rec/c{ulid.generate()}.txt")
+    with open(c, "w+") as w:
+      w.write(["\n".join(audio_files)])
+      w.write("\n")
+    u = ulid.generate()
+    o = Path(f"./audio/rec/o{u}.wav")
+    s = Path(f"./audio/rec/o{u}.webm")
+    run(["ffmpeg", "-f", "concat", "-i", c, "-c", "copy", str(o)])
+    run(["ffmpeg", "-i", o, "-c:a", "libopus", "-b:a", "128k", str(s)])
+    self.Tlobby:discord.TextChannel
+    await self.Tlobby.send("Thank you for playing Tell Me, attached is the combined session recording", file=discord.File(str(s), filename=f"session-{datetime.now():%Y-%m-%d-%H-%M-%S}"))
+    # Game cleanup
     await ctx.voice_client.disconnect()
 
   async def goto_lobby(self, ctx: Context):
