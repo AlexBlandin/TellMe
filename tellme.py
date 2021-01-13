@@ -305,18 +305,17 @@ class TellMe(commands.Cog):
         await self.move_back(ctx, player)
         await asyncio.sleep(10) # latency adjustment (~10-15s, so cutting noise before would be nice)
         vc.stop_listening()
+        await player.remove_roles(self.Rspeaking)
         print(f"Recording complete {str(recording)}")
         keywords, last = extractor.extract(str(recording))
-        await player.remove_roles(self.Rspeaking)
         if i != len(players)-1:
           ping = await self.Tvoting.send("@TellMe-Voting  Please vote on the following prompts by selecting the corresponding number:")
           message = await self.Tvoting.send(" ".join([f"{i}. {p}" for i, p in enumerate(keywords,start=1)]))
-          reacts = []
           for e in ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]:
-            react = await bot.add_reaction(message, e)
+            await message.add_reaction(e)
             await asyncio.sleep(0.33)
-            reacts.append(react)
           await asyncio.sleep(20) # 20s voting period for voting
+          reacts = message.reactions
           prompts = sorted(reacts, key= lambda react: react.count, reverse=True)[:4]
           thanks = await self.Tvoting.send("Thank you for voting")
           await message.delete(delay=2)
