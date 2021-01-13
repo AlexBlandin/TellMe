@@ -2,7 +2,7 @@
 import json
 import logging
 import importlib
-from random import sample
+from random import sample, shuffle
 from pathlib import Path
 from datetime import datetime
 from math import isfinite
@@ -68,6 +68,9 @@ S: Clock ticking.wav by ZoeVixen | License: Creative Commons 0
 S: Ambient electronic loop 001 by frankum | License: Attribution
 """
 
+shuffle(SFX)
+shuffle(BGM)
+
 # Suppress noise about console usage from errors
 youtube_dl.utils.bug_reports_message = lambda: ""
 
@@ -131,6 +134,7 @@ class TellMe(commands.Cog):
 
   async def alert(self, ctx: Context):
     track = Path(f"./audio/sfx/{sample(SFX,1)[0]}")
+    shuffle(SFX)
     source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(track))
     ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
 
@@ -139,6 +143,7 @@ class TellMe(commands.Cog):
     """Plays from a local file or url (almost anything youtube_dl supports)"""
     if query in BGM or query.strip()=="":
       track = Path(f"./audio/bgm/{query if query in BGM else sample(BGM,1)[0]}")
+      shuffle(BGM)
       source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(track))
       ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
       await ctx.send(f"Now playing: {query}")
@@ -148,24 +153,6 @@ class TellMe(commands.Cog):
         ctx.voice_client.play(player, after=lambda e: print(f"Player error: {e}") if e else None)
 
       await ctx.send(f"Now playing: {player.title}")
-
-  async def record(self, ctx: Context, *, time):
-    time = min(10,float(time))
-    if not ctx.voice_client:
-        await ctx.author.voice.channel.connect()
-    vc = ctx.voice_client
-    recording = recording_folder / f"r{ulid.generate()}.wav"
-    recording.touch(exist_ok=True)
-    print(f"Recording {time}s in {str(recording)}")
-    # vc.listen(discord.UserFilter(discord.WaveSink(str(audio)), ctx.author)) # whoever's turn it is
-    vc.listen(discord.WaveSink(str(recording)))
-    await asyncio.sleep(time-10)
-    await self.alert(ctx) # Alert works, but audio was a little garbled immediately after, should be fine
-    await asyncio.sleep(10)
-    await asyncio.sleep(20) # latency adjustment (~10-15s, so cutting noise before would be nice)
-    vc.stop_listening()
-    print(f"Recording complete {str(recording)}")
-    return recording
 
   @commands.command()
   async def say(self, ctx: Context, *, msg: str):
@@ -240,10 +227,11 @@ class TellMe(commands.Cog):
     # await self.join(ctx, channel=None)
     vc = ctx.voice_client
     players = vc.channel.members
-    players = sample(players, len(players)) # shuffle
     players = [player for player in players if player.bot==False]
+    shuffle(players)
     for player in players:
-      player.remove_roles(self.Rspeaking, self.Rcanvote)
+      player.remove_roles(self.Rspeaking)
+      player.remove_roles(self.Rcanvote)
     print(),print(),print(),print()
     turn_order = f"The turn order is: {' then '.join([player.display_name for player in players])}"
     print(turn_order)
@@ -316,13 +304,22 @@ class TellMe(commands.Cog):
         keywords, last = extractor.extract(str(recording))
         if i != len(players)-1:
           ping = await self.Tvoting.send("@TellMe-Voting  Please vote on the following prompts by selecting the corresponding number:")
-          message = await self.Tvoting.send(" ".join([f"{i}. {p}" for i, p in enumerate(keywords,start=1)]))
-          for e in ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]:
+          message = await self.Tvoting.send(" ".join([f"{i}. {p} " for i, p in enumerate(keywords,start=1)]))
+          reactions = {}
+          for n, e in enumerate(["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]):
             await message.add_reaction(e)
             await asyncio.sleep(0.33)
+            reactions[e] = n
           await asyncio.sleep(20) # 20s voting period for voting
           reacts = message.reactions
-          prompts = sorted(reacts, key= lambda react: react.count, reverse=True)[:4]
+          prompts = [keywords[reactions[react.emoji]] for react in sorted(reacts, key= lambda react: react.count, reverse=True)[:4]]
+          print(),print(),print(),print()
+          print(reacts)
+          print(reacts[0].emoji)
+          print(reacts[0].count)
+          print("Voted for:")
+          print(prompts)
+          print(),print(),print(),print()
           thanks = await self.Tvoting.send("Thank you for voting")
           await message.delete(delay=2)
           await ping.delete()
@@ -334,7 +331,7 @@ class TellMe(commands.Cog):
     # Game wrapup
     c = Path(f"./audio/rec/c{ulid.generate()}.txt")
     with open(c, "w+") as w:
-      w.write(["\n".join([str(audio_file) for audio_file in audio_files])])
+      w.write("\n".join([f"file './{str(audio_file)}'" for audio_file in audio_files]))
       w.write("\n")
     u = ulid.generate()
     o = Path(f"./audio/rec/o{u}.wav")
@@ -360,6 +357,7 @@ class TellMe(commands.Cog):
     "Move a user back to the lobby"
     await user.move_to(self.Vlobby)
   
+  @bgm.before_invoke
   @play.before_invoke
   async def ensure_voice(self, ctx: Context):
     if ctx.voice_client is None:
