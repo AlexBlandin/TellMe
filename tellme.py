@@ -8,7 +8,6 @@ from math import isfinite
 
 import asyncio
 import discord
-import pyttsx3
 import youtube_dl
 from ulid import ULID
 from discord.ext import commands, tasks
@@ -171,31 +170,13 @@ class TellMe(commands.Cog):
   @commands.command()
   async def say(self, ctx: Context, *, msg: str):
     f = Path(f"./audio/rec/r{ulid.generate()}.wav")
-    # gf = Path(f"./audio/rec/r{ulid.generate()}.opus")
     f.touch(exist_ok=True)
-    
-    # TTS section
-    importlib.reload(pyttsx3) # bc. pyttsx3 deadlocks on the second runAndWait
-    
-    # Gtts
-    # tts = gTTS(msg)
-    # Works with whatever encoders you have I believe Wav if you want
-    # tts.save(str(gf))
-    
-    tts = pyttsx3.init()
-    tts.setProperty("rate", 125) # espeak is low quality
-    tts.setProperty("voice", tts.getProperty("voices")[2].id)
-    tts.save_to_file(msg, filename=str(f)) # but if we can save out then +1
-    tts.runAndWait() # this blocks, we would like something fast
-    tts.stop()
-    
+    gTTS(msg).save(str(f))
     # await ctx.send(msg) # Text option
     source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(f))
     ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
     
     return f
-    
-    
 
   @commands.command()
   async def play(self, ctx: Context, *, query):

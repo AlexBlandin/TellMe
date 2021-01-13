@@ -15,7 +15,6 @@ SpeechRecognition = "^3.8.1"
 Keras = "2.3.1"
 deepsegment = "^2.3.1"
 rake-nltk = "^1.0.4"
-pyttsx3 = "^2.90"
 gTTS = "^2.2.1"
 
 [tool.poetry.dev-dependencies]
