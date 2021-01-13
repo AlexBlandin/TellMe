@@ -229,14 +229,24 @@ class TellMe(commands.Cog):
         remove TellMe game roles,
     disconnect from voice.
     """
-    self.join(ctx, channel=None)
+    dget, server = discord.utils.get, ctx.guild
+    vchannels, tchannels, roles = server.voice_channels, server.text_channels, server.roles
+    self.Vlobby, self.Vtalking = dget(vchannels, name="Waiting Room"), dget(vchannels, name="Talking")
+    self.Tlobby, self.Tvoting = ctx.channel, dget(tchannels, name="voting")
+    self.Rcanvote, self.Rspeaking = dget(roles, name="TellMe-Voting"), dget(roles, name="TellMe-Speaking")
+    
+    
+    
+    # await self.join(ctx, channel=None)
     vc = ctx.voice_client
-    players = self.Vlobby.members
+    players = vc.channel.members
     players = sample(players, len(players)) # shuffle
-    for player in players:
-      # player.add_roles()
-      player.remove_roles(self.Rcanvote,self.Rspeaking)
-    await self.say(ctx, msg=f"The turn order is: {' then '.join([player.display_name for player in players])}")
+    players = [player for player in players if player.bot==False]
+    print(),print(),print(),print()
+    turn_order = f"The turn order is: {' then '.join([player.display_name for player in players])}"
+    print(turn_order)
+    await ctx.send(turn_order)
+    await self.say(ctx, msg=turn_order)
     await self.say(ctx, msg="I hope you enjoy playing TellMe!")
     await asyncio.sleep(1)
     await self.goto_talking(ctx)
@@ -251,8 +261,11 @@ class TellMe(commands.Cog):
       print(f"Round {r}")
       # Roundloop
       for i, player in enumerate(players):
+        print("Come to me")
         await self.bring_to_me(ctx, player)
+        print("Add roles")
         await player.add_roles(self.Rspeaking)
+        print("Rundown")
         if i == 0:
           s = await self.say(ctx, msg=f"Tell me a {genre} story set in {location} with {'' if item[-1]=='s' else 'an' if item[0] in 'aeiouh' else 'a'} {item}")
           audio_files.append(s)
@@ -262,8 +275,10 @@ class TellMe(commands.Cog):
           s = await self.say(ctx, msg=f"Your prompt words are. {', '.join(prompts)}.")
           audio_files.append(s)
         
+        print("Get ready")
         s = await self.say(ctx, msg=f"You will have {self.T} seconds to tell me a story. You should hear an alert when there are ten seconds remaining. Your {self.T} seconds starts, now.")
         audio_files.append(s)
+        print("Start")
         
         # recording = await self.record(ctx, time=90)
         time = min(15,float(self.T))
@@ -321,7 +336,7 @@ class TellMe(commands.Cog):
 
   async def goto_lobby(self, ctx: Context):
     await ctx.voice_client.move_to(self.Vlobby)
-  
+    
   async def goto_talking(self, ctx: Context):
     await ctx.voice_client.move_to(self.Vtalking)
 
@@ -332,16 +347,7 @@ class TellMe(commands.Cog):
   async def move_back(self, ctx: Context, user: discord.Member):
     "Move a user back to the lobby"
     await user.move_to(self.Vlobby)
-
-  @play.before_invoke
-  async def ensure_roles(self, ctx: Context):
-    dget, server = discord.utils.get, ctx.guild
-    vchannels, tchannels, roles = server.voice_channels, server.text_channels, server.roles
-    self.Vlobby, self.Vtalking = dget(vchannels, name="Waiting Rooms"), dget(vchannels, name="Talking")
-    self.Tlobby, self.Tvoting = ctx.channel, dget(tchannels, name="voting")
-    self.Rcanvote, self.Rspeaking = dget(roles, name="TellMe-Voting"), dget(roles, name="TellMe-Speaking")
   
-  @say.before_invoke
   @play.before_invoke
   async def ensure_voice(self, ctx: Context):
     if ctx.voice_client is None:
@@ -353,7 +359,11 @@ class TellMe(commands.Cog):
     elif ctx.voice_client.is_playing():
       ctx.voice_client.stop()
 
-bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), description="TellMe.py Bot for the TellMe System")
+intent = discord.Intents.default()
+# intent: discord.Intents
+intent.members=True
+intent.voice_states=True
+bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), description="TellMe.py Bot for the TellMe System", intents=intent, chunk_guilds_at_startup=True)
 
 @bot.event
 async def on_ready():
