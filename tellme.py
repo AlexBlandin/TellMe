@@ -113,6 +113,7 @@ class TellMe(commands.Cog):
     self.Tlobby, self.Tvoting = None, None # Text Channel
     self.Rcanvote, self.Rspeaking = None, None # Roles
     self.rounds, self.T = 1, 90
+    seed(time())
 
   @commands.command()
   async def join(self, ctx: Context, *, channel: discord.VoiceChannel):
@@ -305,7 +306,6 @@ class TellMe(commands.Cog):
         await asyncio.sleep(10)
         # "Done" but not really, latency compensation so don't close yet
         s = await self.say(ctx, msg="./audio/pre/your-time-is-up.wav")
-        audio_files.append(s)
         if i != len(players)-1:
           await self.say(ctx, msg="./audio/pre/momentarily-you-will-be.wav")
         else:
@@ -315,6 +315,8 @@ class TellMe(commands.Cog):
         await self.move_back(ctx, player)
         # await asyncio.sleep(15) # latency adjustment (not necessary now we actually spend time talking?)
         vc.stop_listening()
+        audio_files.append(recording)
+        audio_files.append(s)
         await player.remove_roles(self.Rspeaking)
         print(),print(),print(),print()
         print(f"Recording complete {str(recording)}")
@@ -331,7 +333,7 @@ class TellMe(commands.Cog):
             reactions[e] = n
             print(k, n, e)
           await asyncio.sleep(20) # 20s voting period for voting
-          message = await Context.fetch_message(message.id); message: Message # update message
+          message = await self.Tvoting.fetch_message(message.id); message: Message # update message
           reacts = message.reactions; reacts: List[Reaction]
           print(),print(),print(),print()
           print(reacts)
@@ -366,7 +368,7 @@ class TellMe(commands.Cog):
     print("Done!")
     print(),print(),print(),print()
     await self.say(ctx, msg="./audio/pre/thank-you-for-playing.wav")
-    await self.Tlobby.send("Thank you for playing Tell Me, attached is the session recording", file=discord.File(str(s), filename=f"session-{datetime.now():%Y-%m-%d-%H-%M-%S}"))
+    await self.Tlobby.send("Thank you for playing Tell Me, attached is the session recording", file=discord.File(str(u), filename=f"session-{datetime.now():%Y-%m-%d-%H-%M-%S}"))
     # Game cleanup
     await ctx.voice_client.disconnect()
 
