@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import json
 import logging
 import importlib
@@ -9,6 +10,8 @@ from math import isfinite
 from datetime import datetime
 from subprocess import run, PIPE
 from random import sample, shuffle, seed
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 import asyncio
 import discord
@@ -43,7 +46,7 @@ extractor = Extractor()
 
 ulid = ULID()
 logger = logging.getLogger("discord")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO) # logging.WARNING # logging.ERROR
 handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w")
 handler.setFormatter(logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s"))
 logger.addHandler(handler)
