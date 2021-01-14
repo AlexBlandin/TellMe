@@ -350,7 +350,8 @@ class TellMe(commands.Cog):
           await thanks.delete()
       # Round cleanup
       for player in players:
-        player.remove_roles(self.Rcanvote, self.Rspeaking)
+        player.remove_roles(self.Rcanvote)
+        player.remove_roles(self.Rspeaking)
       await self.goto_lobby(ctx)
       await self.say(ctx, msg="./audio/pre/the-round-has-concluded.wav")
     # Game wrapup
@@ -361,14 +362,14 @@ class TellMe(commands.Cog):
       w.write("\n")
     ul = ulid.generate()
     o = Path(f"./audio/rec/o{ul}.wav")
-    u = Path(f"./audio/rec/o{ul}.webm")
+    u = Path(f"./audio/rec/session-{datetime.now():%Y-%m-%d-%H-%M-%S}.webm")
     run(["ffmpeg", "-f", "concat", "-i", c, "-c", "copy", str(o)])
-    run(["ffmpeg", "-i", o, "-c:a", "libopus", "-b:a", "128k", str(u)])
+    run(["ffmpeg", "-i", str(o), "-c:a", "libopus", "-b:a", "128k", str(u)])
     print(),print(),print(),print()
-    print("Done!")
+    print("Done! Session recording at", str(u))
     print(),print(),print(),print()
     await self.say(ctx, msg="./audio/pre/thank-you-for-playing.wav")
-    await self.Tlobby.send("Thank you for playing Tell Me, attached is the session recording", file=discord.File(str(u), filename=f"session-{datetime.now():%Y-%m-%d-%H-%M-%S}"))
+    await self.Tlobby.send("Thank you for playing Tell Me, attached is the session recording", file=discord.File(str(u)))
     # Game cleanup
     await ctx.voice_client.disconnect()
 
