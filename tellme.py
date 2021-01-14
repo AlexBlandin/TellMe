@@ -3,6 +3,7 @@ import json
 import logging
 import importlib
 from time import time
+from typing import List
 from pathlib import Path
 from math import isfinite
 from datetime import datetime
@@ -12,11 +13,12 @@ from random import sample, shuffle, seed
 import asyncio
 import discord
 import youtube_dl
+from gtts import gTTS
 from ulid import ULID
+from parse import parse
 from discord.ext import commands, tasks
 from discord.ext.commands import Context
-from parse import parse
-from gtts import gTTS
+from discord import VoiceChannel, TextChannel, Role, Message, Reaction, Member, Guild
 
 import speech_recognition as sr
 # pip install -U SpeechRecognition
@@ -217,18 +219,21 @@ class TellMe(commands.Cog):
     disconnect from voice.
     """
     dget, server = discord.utils.get, ctx.guild
+    server: Guild
     vchannels, tchannels, roles = server.voice_channels, server.text_channels, server.roles
     self.Vlobby, self.Vtalking = dget(vchannels, name="Waiting Room"), dget(vchannels, name="Talking")
     self.Tlobby, self.Tvoting = ctx.channel, dget(tchannels, name="voting")
     self.Rcanvote, self.Rspeaking = dget(roles, name="TellMe-Voting"), dget(roles, name="TellMe-Speaking")
-    
-    
-    
+    self.Vlobby: VoiceChannel; self.Vtalking: VoiceChannel
+    self.Tlobby: TextChannel; self.Tvoting: TextChannel
+    self.Rcanvote: Role; self.Rspeaking: Role
+
     # await self.join(ctx, channel=None)
     vc = ctx.voice_client
     players = vc.channel.members
     players = [player for player in players if player.bot==False]
     shuffle(players)
+    players: List[Member]
     for player in players:
       player.remove_roles(self.Rspeaking)
       player.remove_roles(self.Rcanvote)
@@ -277,13 +282,13 @@ class TellMe(commands.Cog):
         print(),print(),print(),print()
         print("Get ready")
         print(),print(),print(),print()
-        s = await self.say(ctx, msg=f"You will have {self.T} seconds to tell me a story. You should hear an alert when there are ten seconds remaining. Your {self.T} seconds starts, now.")
+        time = max(15,float(self.T))
+        s = await self.say(ctx, msg=f"You will have {time} seconds to tell me a story. You should hear an alert when there are ten seconds remaining. Your {time} seconds starts, now.")
         audio_files.append(s)
         print(),print(),print(),print()
         print("Start")
         print(),print(),print(),print()
         # recording = await self.record(ctx, time=90)
-        time = max(15,float(self.T))
         vc = ctx.voice_client
         recording = recording_folder / f"r{ulid.generate()}.wav"
         recording.touch(exist_ok=True)
@@ -312,8 +317,9 @@ class TellMe(commands.Cog):
         print(),print(),print(),print()
         keywords, last = extractor.extract(str(recording))
         if i != len(players)-1:
-          ping = await self.Tvoting.send("@TellMe-Voting  Please vote on the following prompts by selecting the corresponding number:")
+          ping = await self.Tvoting.send("Please vote on the following prompts by selecting the corresponding number:")
           message = await self.Tvoting.send(" ".join([f"{i}. {p} " for i, p in enumerate(keywords,start=1)]))
+          message: Message
           reactions = {}
           for k, (n, e) in zip(keywords, enumerate(["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"])):
             await message.add_reaction(e)
@@ -321,8 +327,8 @@ class TellMe(commands.Cog):
             reactions[e] = n
             print(k, n, e)
           await asyncio.sleep(20) # 20s voting period for voting
-          message = await Context.fetch_message(message.id) # update message
-          reacts = message.reactions
+          message = await Context.fetch_message(message.id); message: Message # update message
+          reacts = message.reactions; reacts: List[Reaction]
           print(),print(),print(),print()
           print(reacts)
           prompts = [keywords[reactions[react.emoji]] for react in sorted(reacts, key= lambda react: react.count, reverse=True)[:4]]
@@ -340,16 +346,18 @@ class TellMe(commands.Cog):
       for player in players:
         player.remove_roles(self.Rcanvote, self.Rspeaking)
       await self.goto_lobby(ctx)
+      s = await self.say(ctx, msg="The round has concluded.")
+      audio_files.append(s)
     # Game wrapup
     c = Path(f"./audio/rec/c{ulid.generate()}.txt")
     with open(c, "w+") as w:
       w.write("\n".join([f"file './{str(audio_file)}'" for audio_file in audio_files]))
       w.write("\n")
-    u = ulid.generate()
-    o = Path(f"./audio/rec/o{u}.wav")
-    s = Path(f"./audio/rec/o{u}.webm")
+    ul = ulid.generate()
+    o = Path(f"./audio/rec/o{ul}.wav")
+    u = Path(f"./audio/rec/o{ul}.webm")
     run(["ffmpeg", "-f", "concat", "-i", c, "-c", "copy", str(o)])
-    run(["ffmpeg", "-i", o, "-c:a", "libopus", "-b:a", "128k", str(s)])
+    run(["ffmpeg", "-i", o, "-c:a", "libopus", "-b:a", "128k", str(u)])
     print(),print(),print(),print()
     print("Done!")
     print(),print(),print(),print()
