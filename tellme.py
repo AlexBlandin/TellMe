@@ -259,7 +259,9 @@ class TellMe(commands.Cog):
     
     await asyncio.sleep(5) # wait to see if it moves
     
-    genre, location, item = "Horror", "Swiss Mountains", "Goat"
+    genre = sample(["Action", "Animation", "Comedy", "Crime", "Experimental", "Fantasy", "Historical ", "Horror", "Romance", "Sci-fi", "Romance", "Thriller", "Western", "Psychological"], 1)
+    location = sample(["Farm", "Palace", "Kingdom", "Paris", "Jungle", "Desert ", "Field", "Town", "City", "London", "Italy", "Spain", "Germany", "Portugal", "Poland", "Dubai", "Las Vegas", "California ", "Cardiff"], 1)
+    item = sample(["cup", "phone", "microphone", "pen", "paper", "computer", "mantle", "guitar", "map", "pill", "sword", "gun", "knife", "nuts", "coal", "steel", "brick", "rope", "foil", "kettle", "headphones"], 1)
     prompts, last = [], ""
     
     audio_files = [] # in order of occurence
