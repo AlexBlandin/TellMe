@@ -2,12 +2,12 @@
 import json
 import logging
 import importlib
-from random import sample, shuffle
+from time import time
 from pathlib import Path
-from datetime import datetime
 from math import isfinite
-from subprocess import run, PIPE
 from datetime import datetime
+from subprocess import run, PIPE
+from random import sample, shuffle, seed
 
 import asyncio
 import discord
@@ -327,6 +327,9 @@ class TellMe(commands.Cog):
           prompts = [keywords[reactions[react.emoji]] for react in sorted(reacts, key= lambda react: react.count, reverse=True)[:4]]
           print("Voted for:")
           print(prompts)
+          print("Stopgap means:")
+          prompts += sample(keywords, 4-len(prompts))
+          print(prompts)
           print(),print(),print(),print()
           thanks = await self.Tvoting.send("Thank you for voting")
           await message.delete(delay=2)
@@ -381,10 +384,11 @@ class TellMe(commands.Cog):
       ctx.voice_client.stop()
 
 intent = discord.Intents.default()
-intent: discord.Intents
+# intent: discord.Intents
 intent.members=True
 intent.voice_states=True
 intent.reactions=True
+seed(time())
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), description="TellMe.py Bot for the TellMe System", intents=intent, chunk_guilds_at_startup=True)
 
 @bot.event
