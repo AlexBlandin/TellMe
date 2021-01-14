@@ -15,9 +15,11 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 import asyncio
 import discord
+import librosa
 import youtube_dl
 from gtts import gTTS
 from ulid import ULID
+import soundfile as sf
 from parse import parse
 from discord.ext import commands, tasks
 from discord.ext.commands import Context
@@ -130,13 +132,16 @@ class TellMe(commands.Cog):
     await self.alert(ctx)
   
   @commands.command()
-  async def volume(self, ctx: Context, volume: int):
+  async def volume(self, ctx: Context, volume):
     """Changes the player's volume"""
-
+    
+    if float(volume) < 1: volume = int(float(volume)*100)
+    else: volume = int(volume)
+    
     if ctx.voice_client is None:
       return await ctx.send("Not connected to a voice channel.")
-    ctx.voice_client.source.volume = volume / 100
-    await ctx.send(f"Changed volume to {volume:.0%}")
+    ctx.voice_client.source.volume = volume // 100
+    await ctx.send(f"Changed volume to {volume}%")
 
   async def alert(self, ctx: Context):
     track = Path(f"./audio/sfx/{sample(SFX,1)[0]}")
@@ -169,8 +174,8 @@ class TellMe(commands.Cog):
       f = Path(f"./audio/rec/r{ul}.wav")
       m = Path(f"./audio/rec/r{ul}.mp3")
       gTTS(msg).save(str(m))
-      m.unlink()
-      run(["ffmpeg", "-i", str(m), str(f)])
+      run(["ffmpeg", "-loglevel", "panic", "-i", str(m), str(f)])
+      # m.unlink()
     wait = float(json.loads(run(["ffprobe", "-i", str(f), "-loglevel", "quiet", "-print_format", "json", "-show_streams"], encoding="utf-8", stdout=PIPE).stdout)["streams"][0]["duration"]) + 0.5
     source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(f))
     ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
@@ -309,6 +314,8 @@ class TellMe(commands.Cog):
           await self.say(ctx, msg="./audio/pre/the-round-has-ended.wav")
         await asyncio.sleep(5)
         vc.stop_listening()
+        resampled, sr = librosa.load(str(recording), sr=24000)
+        sf.write(str(recording), resampled, sr, subtype="PCM_16", endian="LITTLE")
         await player.add_roles(self.Rcanvote)
         await self.move_back(ctx, player)
         audio_files.append(recording)
@@ -317,6 +324,7 @@ class TellMe(commands.Cog):
         print(),print(),print(),print()
         print(f"Recording complete {str(recording)}")
         print(),print(),print(),print()
+        run()
         keywords, last = extractor.extract(str(recording))
         if i != len(players)-1:
           ping = await self.Tvoting.send("Please vote on the following prompts by selecting the corresponding number:")
@@ -360,8 +368,8 @@ class TellMe(commands.Cog):
     ul = ulid.generate()
     o = Path(f"./audio/o{ul}.wav")
     u = Path(f"./audio/session-{datetime.now():%Y-%m-%d-%H-%M-%S}.webm")
-    run(["ffmpeg", "-f", "concat", "-safe", "0", "-i", c, "-c", "copy", str(o)])
-    run(["ffmpeg", "-i", str(o), "-c:a", "libopus", "-b:a", "128k", str(u)])
+    run(["ffmpeg", "-f", "concat", "-safe", "0", "-loglevel", "panic", "-i", c, str(u)]) # str(o)
+    # run(["ffmpeg", "-i", str(o), "-loglevel", "panic", "-c:a", "libopus", str(u)])
     print(),print(),print(),print()
     print("Done! Session recording at", str(u))
     print(),print(),print(),print()

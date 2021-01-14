@@ -13,7 +13,7 @@ for s, n in a:
   f = fl/f"{n}.wav"
   m = fl/f"{n}.mp3"
   gTTS(s).save(str(m))
-  run(["ffmpeg", "-i", str(m), str(f)])
+  run(["ffmpeg", "-loglevel", "panic", "-i", str(m), str(f)])
   print(str(f), repr(s))
 
 for f in fl.glob("*"):
