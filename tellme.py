@@ -321,6 +321,7 @@ class TellMe(commands.Cog):
             reactions[e] = n
             print(k, n, e)
           await asyncio.sleep(20) # 20s voting period for voting
+          message = await Context.fetch_message(message.id) # update message
           reacts = message.reactions
           print(),print(),print(),print()
           print(reacts)
