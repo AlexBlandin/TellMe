@@ -365,11 +365,8 @@ class TellMe(commands.Cog):
     with open(c, "w+") as w:
       w.write("\n".join([f"file '{str(audio_file.parent.name)}/{audio_file.name}'" for audio_file in audio_files]))
       w.write("\n")
-    ul = ulid.generate()
-    o = Path(f"./audio/o{ul}.wav")
-    u = Path(f"./audio/session-{datetime.now():%Y-%m-%d-%H-%M-%S}.webm")
-    run(["ffmpeg", "-f", "concat", "-safe", "0", "-loglevel", "panic", "-i", c, str(u)]) # str(o)
-    # run(["ffmpeg", "-i", str(o), "-loglevel", "panic", "-c:a", "libopus", str(u)])
+    u = Path(f"./audio/session-{datetime.now():%Y-%m-%d-%H-%M-%S}.m4a")
+    run(["ffmpeg", "-f", "concat", "-safe", "0", "-loglevel", "panic", "-i", c, str(u)])
     print(),print(),print(),print()
     print("Done! Session recording at", str(u))
     print(),print(),print(),print()
