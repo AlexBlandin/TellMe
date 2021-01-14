@@ -240,8 +240,7 @@ class TellMe(commands.Cog):
     shuffle(players)
     players: List[Member]
     for player in players:
-      player.remove_roles(self.Rspeaking)
-      player.remove_roles(self.Rcanvote)
+      await player.remove_roles(self.Rspeaking, self.Rcanvote)
     print(),print(),print(),print()
     turn_order = f"The turn order is: {' then '.join([player.display_name for player in players])}"
     print(turn_order)
@@ -350,8 +349,8 @@ class TellMe(commands.Cog):
           await thanks.delete()
       # Round cleanup
       for player in players:
-        player.remove_roles(self.Rcanvote)
-        player.remove_roles(self.Rspeaking)
+        await player.remove_roles(self.Rcanvote)
+        await player.remove_roles(self.Rspeaking)
       await self.goto_lobby(ctx)
       await self.say(ctx, msg="./audio/pre/the-round-has-concluded.wav")
     # Game wrapup
@@ -372,8 +371,7 @@ class TellMe(commands.Cog):
     await self.Tlobby.send("Thank you for playing Tell Me, attached is the session recording", file=discord.File(str(u)))
     # Game cleanup
     for player in players:
-        player.remove_roles(self.Rcanvote)
-        player.remove_roles(self.Rspeaking)
+        await player.remove_roles(self.Rcanvote, self.Rspeaking)
     await ctx.voice_client.disconnect()
 
   async def goto_lobby(self, ctx: Context):
