@@ -263,50 +263,40 @@ class TellMe(commands.Cog):
     
     # Gameloop
     for r in range(min(1,self.rounds)):
-      print(),print(),print(),print()
       print(f"Round {r}")
-      print(),print(),print(),print()
       # Roundloop
       for i, player in enumerate(players):
         await self.bring_to_me(ctx, player)
         await player.add_roles(self.Rspeaking)
         await asyncio.sleep(5) # wait to see if it moves
-        print(),print(),print(),print()
         print("Rundown")
-        print(),print(),print(),print()
         if i == 0:
           s = await self.say(ctx, msg=f"Tell me a {genre} story set in {location} with {'' if item[-1]=='s' else 'an' if item[0] in 'aeiouh' else 'a'} {item}")
           audio_files.append(s)
         else:
           s = await self.say(ctx, msg=f"The last sentence was. {last}.")
           audio_files.append(s)
-          print(),print(),print(),print()
           print("Prompts:")
           print(prompts)
-          print(),print(),print(),print()
           s = await self.say(ctx, msg=f"Your prompt words are. {', '.join(prompts)}.")
           audio_files.append(s)
-        print(),print(),print(),print()
         print("Get ready")
-        print(),print(),print(),print()
-        time = max(15,float(self.T))
+        time = max(15,int(self.T))
         s = await self.say(ctx, msg=f"You will have {time} seconds to tell me a story. You should hear an alert when there are ten seconds remaining. Your {time} seconds starts, now.")
         audio_files.append(s)
-        print(),print(),print(),print()
         print("Start")
-        print(),print(),print(),print()
         # recording = await self.record(ctx, time=90)
         vc = ctx.voice_client
         recording = recording_folder / f"r{ulid.generate()}.wav"
         recording.touch(exist_ok=True)
-        print(),print(),print(),print()
         print(f"Recording {time}s in {str(recording)}")
-        print(),print(),print(),print()
         vc.listen(discord.WaveSink(str(recording)))
         await asyncio.sleep(time-10)
         await self.alert(ctx)
         await asyncio.sleep(10)
         # "Done" but not really, latency compensation so don't close yet
+        if ctx.voice_client.is_playing():
+          ctx.voice_client.stop()
         s = await self.say(ctx, msg="./audio/pre/your-time-is-up.wav")
         if i != len(players)-1:
           await self.say(ctx, msg="./audio/pre/momentarily-you-will-be.wav")
@@ -333,19 +323,17 @@ class TellMe(commands.Cog):
             await message.add_reaction(e)
             await asyncio.sleep(0.5)
             reactions[e] = n
-            print(k, n, e)
+            # print(k, n, e)
           await asyncio.sleep(20) # 20s voting period for voting
           message = await self.Tvoting.fetch_message(message.id); message: Message # update message
           reacts = message.reactions; reacts: List[Reaction]
-          print(),print(),print(),print()
-          print(reacts)
           prompts = [keywords[reactions[react.emoji]] for react in sorted(reacts, key= lambda react: react.count, reverse=True)[:4]]
           print("Voted for:")
           print(prompts)
-          print("Stopgap means:")
-          prompts += sample([kw for kw in keywords if kw not in prompts], 4-len(prompts))
-          print(prompts)
-          print(),print(),print(),print()
+          if len(prompts)<4:
+            print("Stopgap means:")
+            prompts += sample([kw for kw in keywords if kw not in prompts], 4-len(prompts))
+            print(prompts)
           thanks = await self.Tvoting.send("Thank you for voting")
           await message.delete(delay=2)
           await ping.delete()
@@ -354,9 +342,11 @@ class TellMe(commands.Cog):
       for player in players:
         await player.remove_roles(self.Rcanvote)
         await player.remove_roles(self.Rspeaking)
-      await self.goto_lobby(ctx)
-      await self.say(ctx, msg="./audio/pre/the-round-has-concluded.wav")
+      # await self.goto_lobby(ctx)
+      # await self.say(ctx, msg="./audio/pre/the-round-has-concluded.wav")
     # Game wrapup
+    await self.goto_lobby(ctx)
+    await asyncio.sleep(3)
     await self.say(ctx, msg="./audio/pre/i-hope-you-enjoyed.wav")
     c = Path(f"./audio/rec/c{ulid.generate()}.txt")
     with open(c, "w+") as w:
