@@ -158,9 +158,12 @@ class TellMe(commands.Cog):
 
   @commands.command()
   async def say(self, ctx: Context, *, msg: str):
-    f = Path(f"./audio/rec/r{ulid.generate()}.wav")
-    f.touch(exist_ok=True)
-    gTTS(msg).save(str(f))
+    if msg[:12] == "./audio/pre/":
+      f = Path(msg) # pre-recorded
+    else:
+      f = Path(f"./audio/rec/r{ulid.generate()}.wav")
+      f.touch(exist_ok=True)
+      gTTS(msg).save(str(f))
     wait = float(json.loads(run(["ffprobe", "-i", str(f), "-loglevel", "quiet", "-print_format", "json", "-show_streams"], encoding="utf-8", stdout=PIPE).stdout)["streams"][0]["duration"]) + 0.5
     source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(f))
     ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
@@ -228,6 +231,7 @@ class TellMe(commands.Cog):
     self.Tlobby: TextChannel; self.Tvoting: TextChannel
     self.Rcanvote: Role; self.Rspeaking: Role
 
+    await self.say(ctx, msg="./audio/pre/welcome-to-tellme.wav")
     # await self.join(ctx, channel=None)
     vc = ctx.voice_client
     players = vc.channel.members
@@ -243,7 +247,7 @@ class TellMe(commands.Cog):
     print(),print(),print(),print()
     await ctx.send(turn_order)
     await self.say(ctx, msg=turn_order)
-    await self.say(ctx, msg="I hope you enjoy playing TellMe!")
+    await self.say(ctx, msg="./audio/pre/i-shall-begin-shortly.wav")
     await asyncio.sleep(0.5)
     await self.goto_talking(ctx)
     
@@ -300,12 +304,12 @@ class TellMe(commands.Cog):
         await self.alert(ctx)
         await asyncio.sleep(10)
         # "Done" but not really, latency compensation so don't close yet
-        s = await self.say(ctx, msg="Your time is up.")
+        s = await self.say(ctx, msg="./audio/pre/your-time-is-up.wav")
         audio_files.append(s)
         if i != len(players)-1:
-          await self.say(ctx, msg="Momentarily, you will be moved back to the lobby, and invited to vote for the next player's prompts. The voting channel will soon appear for you.")
+          await self.say(ctx, msg="./audio/pre/momentarily-you-will-be.wav")
         else:
-          await self.say(ctx, msg="Momentarily, you will be moved back to the lobby, as the round has ended.")
+          await self.say(ctx, msg="./audio/pre/the-round-has-ended.wav")
         await player.add_roles(self.Rcanvote)
         await asyncio.sleep(5)
         await self.move_back(ctx, player)
@@ -346,9 +350,9 @@ class TellMe(commands.Cog):
       for player in players:
         player.remove_roles(self.Rcanvote, self.Rspeaking)
       await self.goto_lobby(ctx)
-      s = await self.say(ctx, msg="The round has concluded.")
-      audio_files.append(s)
+      await self.say(ctx, msg="./audio/pre/the-round-has-concluded.wav")
     # Game wrapup
+    await self.say(ctx, msg="./audio/pre/i-hope-you-enjoyed.wav")
     c = Path(f"./audio/rec/c{ulid.generate()}.txt")
     with open(c, "w+") as w:
       w.write("\n".join([f"file './{str(audio_file)}'" for audio_file in audio_files]))
@@ -361,7 +365,8 @@ class TellMe(commands.Cog):
     print(),print(),print(),print()
     print("Done!")
     print(),print(),print(),print()
-    await self.Tlobby.send("Thank you for playing Tell Me, attached is the combined session recording", file=discord.File(str(s), filename=f"session-{datetime.now():%Y-%m-%d-%H-%M-%S}"))
+    await self.say(ctx, msg="./audio/pre/thank-you-for-playing.wav")
+    await self.Tlobby.send("Thank you for playing Tell Me, attached is the session recording", file=discord.File(str(s), filename=f"session-{datetime.now():%Y-%m-%d-%H-%M-%S}"))
     # Game cleanup
     await ctx.voice_client.disconnect()
 
