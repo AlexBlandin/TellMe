@@ -132,16 +132,16 @@ class TellMe(commands.Cog):
     await self.alert(ctx)
   
   @commands.command()
-  async def volume(self, ctx: Context, volume):
+  async def volume(self, ctx: Context, *, volume: float):
     """Changes the player's volume"""
-    
-    if float(volume) < 1: volume = int(float(volume)*100)
+    volume = float(volume)
+    if int(volume) == 0: volume = int(volume*100)
     else: volume = int(volume)
     
     if ctx.voice_client is None:
       return await ctx.send("Not connected to a voice channel.")
-    ctx.voice_client.source.volume = volume // 100
-    await ctx.send(f"Changed volume to {volume}%")
+    ctx.voice_client.source.volume = int(volume / 100)
+    await ctx.send(f"Changed volume to {int(volume)}%")
 
   async def alert(self, ctx: Context):
     track = Path(f"./audio/sfx/{sample(SFX,1)[0]}")
@@ -150,9 +150,24 @@ class TellMe(commands.Cog):
     ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
 
   @commands.command()
+  async def stop(self, ctx: Context):
+    if ctx.voice_client is not None and ctx.voice_client.is_playing():
+      ctx.voice_client.stop()
+  
+  @commands.command()
+  async def pause(self, ctx: Context):
+    if ctx.voice_client is not None and ctx.voice_client.is_playing():
+      ctx.voice_client.pause()
+  
+  @commands.command()
+  async def resume(self, ctx: Context):
+    if ctx.voice_client is not None and ctx.voice_client.is_paused():
+      ctx.voice_client.resume()
+
+  @commands.command()
   async def bgm(self, ctx: Context, *, query):
     """Plays from a local file or url (almost anything youtube_dl supports)"""
-    if query in BGM or query.strip()=="":
+    if query in BGM or query.strip()=="any":
       track = Path(f"./audio/bgm/{query if query in BGM else sample(BGM,1)[0]}")
       shuffle(BGM)
       source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(track))
@@ -324,7 +339,6 @@ class TellMe(commands.Cog):
         print(),print(),print(),print()
         print(f"Recording complete {str(recording)}")
         print(),print(),print(),print()
-        run()
         keywords, last = extractor.extract(str(recording))
         if i != len(players)-1:
           ping = await self.Tvoting.send("Please vote on the following prompts by selecting the corresponding number:")
