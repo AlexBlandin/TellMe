@@ -328,7 +328,7 @@ class TellMe(commands.Cog):
           print("Voted for:")
           print(prompts)
           print("Stopgap means:")
-          prompts += sample([kw for kw in keywords if not in prompts], 4-len(prompts))
+          prompts += sample([kw for kw in keywords if kw not in prompts], 4-len(prompts))
           print(prompts)
           print(),print(),print(),print()
           thanks = await self.Tvoting.send("Thank you for voting")
