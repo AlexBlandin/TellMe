@@ -323,7 +323,8 @@ class TellMe(commands.Cog):
             await message.add_reaction(e)
             await asyncio.sleep(0.5)
             reactions[e] = n
-            # print(k, n, e)
+            print(k, end=" ")
+          print()
           await asyncio.sleep(20) # 20s voting period for voting
           message = await self.Tvoting.fetch_message(message.id); message: Message # update message
           reacts = message.reactions; reacts: List[Reaction]
