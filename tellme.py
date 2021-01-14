@@ -165,9 +165,12 @@ class TellMe(commands.Cog):
     if msg[:12] == "./audio/pre/":
       f = Path(msg) # pre-recorded
     else:
-      f = Path(f"./audio/rec/r{ulid.generate()}.wav")
-      f.touch(exist_ok=True)
-      gTTS(msg).save(str(f))
+      ul = ulid.generate()
+      f = Path(f"./audio/rec/r{ul}.wav")
+      m = Path(f"./audio/rec/r{ul}.mp3")
+      gTTS(msg).save(str(m))
+      m.unlink()
+      run(["ffmpeg", "-i", str(m), str(f)])
     wait = float(json.loads(run(["ffprobe", "-i", str(f), "-loglevel", "quiet", "-print_format", "json", "-show_streams"], encoding="utf-8", stdout=PIPE).stdout)["streams"][0]["duration"]) + 0.5
     source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(f))
     ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
@@ -285,7 +288,7 @@ class TellMe(commands.Cog):
         s = await self.say(ctx, msg=f"You will have {time} seconds to tell me a story. You should hear an alert when there are ten seconds remaining. Your {time} seconds starts, now.")
         audio_files.append(s)
         print("Start")
-        # recording = await self.record(ctx, time=90)
+        # Start recording
         vc = ctx.voice_client
         recording = recording_folder / f"r{ulid.generate()}.wav"
         recording.touch(exist_ok=True)
@@ -294,7 +297,7 @@ class TellMe(commands.Cog):
         await asyncio.sleep(time-10)
         await self.alert(ctx)
         await asyncio.sleep(10)
-        # "Done" but not really, latency compensation so don't close yet
+        # Done, we can stop momentarily
         if ctx.voice_client.is_playing():
           ctx.voice_client.stop()
         s = await self.say(ctx, msg="./audio/pre/your-time-is-up.wav")
@@ -302,11 +305,10 @@ class TellMe(commands.Cog):
           await self.say(ctx, msg="./audio/pre/momentarily-you-will-be.wav")
         else:
           await self.say(ctx, msg="./audio/pre/the-round-has-ended.wav")
-        await player.add_roles(self.Rcanvote)
         await asyncio.sleep(5)
-        await self.move_back(ctx, player)
-        # await asyncio.sleep(15) # latency adjustment (not necessary now we actually spend time talking?)
         vc.stop_listening()
+        await player.add_roles(self.Rcanvote)
+        await self.move_back(ctx, player)
         audio_files.append(recording)
         audio_files.append(s)
         await player.remove_roles(self.Rspeaking)
@@ -337,8 +339,8 @@ class TellMe(commands.Cog):
             print(prompts)
           thanks = await self.Tvoting.send("Thank you for voting")
           await message.delete(delay=2)
-          await ping.delete()
-          await thanks.delete()
+          await ping.delete(delay=2)
+          await thanks.delete(delay=10)
       # Round cleanup
       for player in players:
         await player.remove_roles(self.Rcanvote)
@@ -349,14 +351,14 @@ class TellMe(commands.Cog):
     await self.goto_lobby(ctx)
     await asyncio.sleep(3)
     await self.say(ctx, msg="./audio/pre/i-hope-you-enjoyed.wav")
-    c = Path(f"./audio/rec/c{ulid.generate()}.txt")
+    c = Path(f"./audio/c{ulid.generate()}.txt")
     with open(c, "w+") as w:
-      w.write("\n".join([f"file './{str(audio_file)}'" for audio_file in audio_files]))
+      w.write("\n".join([f"file '{str(audio_file.parent.name)}/{audio_file.name}'" for audio_file in audio_files]))
       w.write("\n")
     ul = ulid.generate()
-    o = Path(f"./audio/rec/o{ul}.wav")
-    u = Path(f"./audio/rec/session-{datetime.now():%Y-%m-%d-%H-%M-%S}.webm")
-    run(["ffmpeg", "-f", "concat", "-i", c, "-c", "copy", str(o)])
+    o = Path(f"./audio/o{ul}.wav")
+    u = Path(f"./audio/session-{datetime.now():%Y-%m-%d-%H-%M-%S}.webm")
+    run(["ffmpeg", "-f", "concat", "-safe", "0", "-i", c, "-c", "copy", str(o)])
     run(["ffmpeg", "-i", str(o), "-c:a", "libopus", "-b:a", "128k", str(u)])
     print(),print(),print(),print()
     print("Done! Session recording at", str(u))
