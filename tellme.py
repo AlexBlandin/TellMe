@@ -371,6 +371,9 @@ class TellMe(commands.Cog):
     await self.say(ctx, msg="./audio/pre/thank-you-for-playing.wav")
     await self.Tlobby.send("Thank you for playing Tell Me, attached is the session recording", file=discord.File(str(u)))
     # Game cleanup
+    for player in players:
+        player.remove_roles(self.Rcanvote)
+        player.remove_roles(self.Rspeaking)
     await ctx.voice_client.disconnect()
 
   async def goto_lobby(self, ctx: Context):
