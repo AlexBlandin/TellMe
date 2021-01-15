@@ -132,6 +132,11 @@ class TellMe(commands.Cog):
     await self.alert(ctx)
   
   @commands.command()
+  async def roudns(self, ctx: Context, *, n: int):
+    self.rounds = max(1, int(n))
+    await ctx.send(f"Now playing for {self.rounds} rounds")
+  
+  @commands.command()
   async def volume(self, ctx: Context, *, volume: float):
     """Changes the player's volume"""
     volume = float(volume)
@@ -295,7 +300,7 @@ class TellMe(commands.Cog):
         await player.add_roles(self.Rspeaking)
         await asyncio.sleep(5) # wait to see if it moves
         print("Rundown")
-        if i == 0:
+        if i == 0 and r == 0:
           s = await self.say(ctx, msg=f"Tell me a {genre} story set in {location} with {'' if item[-1]=='s' else 'an' if item[0] in 'aeiouh' else 'a'} {item}")
           audio_files.append(s)
         else:
