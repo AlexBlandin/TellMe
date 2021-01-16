@@ -7,6 +7,10 @@ __pycache__/
 audio/rec/
 audio/*.txt
 audio/*.m4a
+audio/temp/
+
+# Discord Token
+tellme-token.txt
 
 # C extensions
 *.so
