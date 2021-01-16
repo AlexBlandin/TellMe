@@ -14,6 +14,8 @@ Install [Poetry](https://python-poetry.org/), open the `$ poetry shell` in the p
 
 Install `libopus0`/`libopus` (depending on system) and `ffmpeg`.
 
+Have a `tellme-token.txt` file available that has your Discord Bot token.
+
 ## Running
 
 While in the poetry shell, use `$ poetry run python3.7 tellme.py`
