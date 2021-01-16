@@ -446,5 +446,5 @@ async def logout(ctx):
     await ctx.voice_client.disconnect()
   await ctx.bot.logout()
 
-with open("../tellme-token.txt","r") as o: TOKEN=o.read().strip()
+with open("tellme-token.txt","r") as o: TOKEN=o.read().strip()
 bot.run(TOKEN)
