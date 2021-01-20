@@ -381,7 +381,6 @@ class TellMe(commands.Cog):
     "Move a user back to the lobby"
     await user.move_to(self.Vlobby)
 
-# WARNING: Might need to check this I added manage roles as I think it was a necessary permission but not sure. If so, the permission number needs updating.
 # permissions 321976400: manage roles & channels, send messages ... attach files, add reactions, connect, speak, move members, use voice activity
 
 # Intents necessary for TellMe.py at this moment
