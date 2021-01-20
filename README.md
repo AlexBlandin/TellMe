@@ -14,7 +14,11 @@ Install [Poetry](https://python-poetry.org/), open the `$ poetry shell` in the p
 
 Install `libopus0`/`libopus` (depending on system) and `ffmpeg`.
 
-Have a `token.txt` file available that has your Discord Bot token.
+Have a `token.txt` file available that has your Discord Bot token, and an `owner.txt` file with your Discord User ID.
+
+Currently, these are the expected permissions (321976400):
+
+![](./permissions.png)
 
 ## Running
 
