@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+
+# ████████╗███████╗██╗     ██╗     ███╗   ███╗███████╗   ██████╗ ██╗   ██╗
+# ╚══██╔══╝██╔════╝██║     ██║     ████╗ ████║██╔════╝   ██╔══██╗╚██╗ ██╔╝
+#    ██║   █████╗  ██║     ██║     ██╔████╔██║█████╗     ██████╔╝ ╚████╔╝ 
+#    ██║   ██╔══╝  ██║     ██║     ██║╚██╔╝██║██╔══╝     ██╔═══╝   ╚██╔╝  
+#    ██║   ███████╗███████╗███████╗██║ ╚═╝ ██║███████╗██╗██║        ██║   
+#    ╚═╝   ╚══════╝╚══════╝╚══════╝╚═╝     ╚═╝╚══════╝╚═╝╚═╝        ╚═╝   
+# A Discord Bot to run TellMe sessions
+
+# standard modules
 import os
 import json
 import logging
@@ -11,8 +21,10 @@ from datetime import datetime
 from subprocess import run, PIPE
 from random import sample, shuffle, seed
 
+# Quieten Tensorflow
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
+# pip modules (handled by poetry)
 import asyncio
 import discord
 import librosa
@@ -21,26 +33,25 @@ from gtts import gTTS
 from ulid import ULID
 import soundfile as sf
 from parse import parse
+import speech_recognition as sr
 from discord.ext import commands, tasks
 from discord.ext.commands import Context
 from discord import VoiceChannel, TextChannel, Role, Message, Reaction, Member, Guild
 
-import speech_recognition as sr
-# pip install -U SpeechRecognition
-
 # Thanks to imayhaveborkedit's patches (semi-up to date by Gorialis) we have audio recording
 # pip install -U "discord.py[voice] @ git+https://github.com/Gorialis/discord.py@voice-recv-mk3"
 
+# local modules
+from ytdl import YTDLSource
 from extractor import Extractor
+extractor = Extractor()
 
-# permissions 53540928: send messages ... attach files, add reactions, connect, speak, move members, use voice activity
-
-# lib = next(Path("/").rglob("libopus.so*"))
+# On Debian-likes, this is where libopus will install
 lib = Path("/usr/lib/x86_64-linux-gnu/libopus.so.0.7.0")
+if not lib.exists():
+  lib = next(Path("/usr/lib/x86_64-linux-gnu/").glob("libopus.so.*"))
 discord.opus.load_opus(lib)
 print(f"Audio working" if discord.opus.is_loaded() else "Uh oh", str(lib))
-
-extractor = Extractor()
 
 ulid = ULID()
 logger = logging.getLogger("discord")
@@ -51,61 +62,6 @@ logger.addHandler(handler)
 
 recording_folder = Path("./audio/rec/")
 recording_folder.mkdir(parents=True, exist_ok=True)
-
-SFX=[f.name for f in Path("./audio/sfx/").glob("*")] # Some nice SFX to use (for "login" etc only right now)
-"""
-S: Up Chime 2 by FoolBoyMedia | License: Attribution
-S: Flourish Spacey 1 by GameAudio | License: Creative Commons 0
-S: gotItem.mp3 by Kastenfrosch | License: Creative Commons 0
-"""
-
-BGM=[f.name for f in Path("./audio/bgm/").glob("*")] # Some nice BGM to use
-"""
-S: Drone_DarkEmptiness.wav by ceich93 | License: Creative Commons 0
-S: Low Slow Metal by be-steele | License: Creative Commons 0
-S: abstract (ambient loop) by ShadyDave | License: Attribution Noncommercial
-S: Mystical Cavern by Efecto Fundador | License: Attribution
-S: Castle Music Loop #1 by Sirkoto51 | License: Attribution
-S: River Stream (Subtle, slow, gentle) by CaganCelik | License: Creative Commons 0
-S: Clock ticking.wav by ZoeVixen | License: Creative Commons 0
-S: Ambient electronic loop 001 by frankum | License: Attribution
-"""
-
-shuffle(SFX)
-shuffle(BGM)
-
-# Suppress noise about console usage from errors
-youtube_dl.utils.bug_reports_message = lambda: ""
-
-ytdl_format_options = {
-    "format": "bestaudio/best",
-    "outtmpl": "audio/temp/%(extractor)s-%(id)s-%(title)s.%(ext)s",
-    "restrictfilenames": True, "noplaylist": True,
-    "nocheckcertificate": True, "ignoreerrors": False,
-    "logtostderr": False, "quiet": True, "no_warnings": True,
-    "default_search": "auto", "source_address": "0.0.0.0"
-}
-ffmpeg_options = {
-  "options": "-vn"
-}
-
-ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
-class YTDLSource(discord.PCMVolumeTransformer):
-  def __init__(self, source, *, data, volume=0.5):
-    super().__init__(source, volume)
-    self.data = data
-    self.title = data.get("title")
-    self.url = data.get("url")
-
-  @classmethod
-  async def from_url(cls, url, *, loop=None, stream=False):
-    loop = loop or asyncio.get_event_loop()
-    data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
-    if "entries" in data:
-      # take first item from a playlist
-      data = data["entries"][0]
-    filename = data["url"] if stream else ytdl.prepare_filename(data)
-    return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
 
 class TellMe(commands.Cog):
   def __init__(self, bot):
@@ -121,6 +77,28 @@ class TellMe(commands.Cog):
     self.keywords = []
     self.audio_files = []
     seed(time())
+    
+    self.SFX=[f.name for f in Path("./audio/sfx/").glob("*")] # Some nice SFX to use (for "login" etc only right now)
+    """
+    S: Up Chime 2 by FoolBoyMedia | License: Attribution
+    S: Flourish Spacey 1 by GameAudio | License: Creative Commons 0
+    S: gotItem.mp3 by Kastenfrosch | License: Creative Commons 0
+    """
+
+    self.BGM=[f.name for f in Path("./audio/bgm/").glob("*")] # Some nice BGM to use
+    """
+    S: Drone_DarkEmptiness.wav by ceich93 | License: Creative Commons 0
+    S: Low Slow Metal by be-steele | License: Creative Commons 0
+    S: abstract (ambient loop) by ShadyDave | License: Attribution Noncommercial
+    S: Mystical Cavern by Efecto Fundador | License: Attribution
+    S: Castle Music Loop #1 by Sirkoto51 | License: Attribution
+    S: River Stream (Subtle, slow, gentle) by CaganCelik | License: Creative Commons 0
+    S: Clock ticking.wav by ZoeVixen | License: Creative Commons 0
+    S: Ambient electronic loop 001 by frankum | License: Attribution
+    """
+    
+    shuffle(self.SFX)
+    shuffle(self.BGM)
 
   @commands.command()
   async def join(self, ctx: Context, *, channel: discord.VoiceChannel):
@@ -168,9 +146,8 @@ class TellMe(commands.Cog):
   @commands.command()
   async def bgm(self, ctx: Context, *, query):
     """Plays from a local file or url (almost anything youtube_dl supports)"""
-    if query in BGM or query.strip()=="any":
-      track = Path(f"./audio/bgm/{query if query in BGM else sample(BGM,1)[0]}")
-      shuffle(BGM)
+    if query in self.BGM or query.strip()=="any":
+      track = Path(f"./audio/bgm/{query if query in self.BGM else sample(self.BGM,1)[0]}")
       source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(track))
       ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
       await ctx.send(f"Now playing: {query}")
@@ -184,54 +161,7 @@ class TellMe(commands.Cog):
   @commands.command()
   async def play(self, ctx: Context):
     """Plays TellMe"""
-    """
-    assume everyone is assembled in the "lobby" voice & text channel,
-    one user (me) will type `!play`,
-      specifies gamemode (for now, just controls number of rounds in a game) (not important for now)
-        "basic" is 1 round per game
-        "twoturn" is 2 rounds per game (not important for now)
-    TellMe will connect to the author's location,
-      query the channel for the list of users,
-      clear any TellMe game roles ("canvote" & "speaking"),
-      assign a random play order,
-      announce the play order,
-      move into the "speaking" voice & text channel
-    gameloop begins (individual turns of all players forming a round),
-      TellMe knows the k'th player,
-      gives them the "speaking" role,
-      moves them into the "speaking" channels,
-      gives them the rundown:
-        f"The last sentence was: {ls}" if k!=0 else f"Tell me a {genre} story set in {location} with {item}"
-        f"Your prompt words are: {' '.join(prompts)}"
-        f"You will have {T} seconds to tell me a story. When there are ten seconds remaining, an alert will play."
-        f"Your {T} seconds starts, now."
-      records for 90s (bgm optional),
-        alert at 10s remaining,
-      announces that time is up,
-        assigns them the "canvote" role,
-        invites them to move back to the lobby and look at the voting text channel to vote momentatily,
-        forcefully moves them and removes "speaking" role,
-      runs recording through extractor,
-      puts keywords up for voting,
-        message with reacts 1 through 10,
-        alert those in lobby by text and voice that they have 20s to vote,
-        wait 20s,
-        tally votes,
-        `prompts = ` top 4 (ties settled by random sample),
-        thank those who voted and delete the vote message,
-      loop,
-    end of round,
-      unassigns "canvote" role,
-      (that's all for now), 
-    end of game,
-      report back the combined story,
-        including TellMe's rundown and the votes
-      upload stitched together audio (.opus in a .webm for discord embedding?),
-      thank,
-      cleanup,
-        remove TellMe game roles,
-    disconnect from voice.
-    """
+    
     dget, server = discord.utils.get, ctx.guild
     server: Guild
     vchannels, tchannels, roles = server.voice_channels, server.text_channels, server.roles
@@ -428,8 +358,8 @@ class TellMe(commands.Cog):
     await thanks.delete(delay=10)
 
   async def alert(self, ctx: Context):
-    track = Path(f"./audio/sfx/{sample(SFX,1)[0]}")
-    shuffle(SFX)
+    track = Path(f"./audio/sfx/{sample(self.SFX,1)[0]}")
+    shuffle(self.SFX)
     source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(track))
     ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
 
@@ -448,8 +378,11 @@ class TellMe(commands.Cog):
     "Move a user back to the lobby"
     await user.move_to(self.Vlobby)
 
+# permissions 53540928: send messages ... attach files, add reactions, connect, speak, move members, use voice activity
+
+# Intents necessary for TellMe.py at this moment
 intent = discord.Intents.default()
-# intent: discord.Intents
+intent: discord.Intents
 intent.members=True
 intent.voice_states=True
 intent.reactions=True

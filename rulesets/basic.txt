@@ -1,0 +1,46 @@
+assume everyone is assembled in the "lobby" voice & text channel,
+one user (me) will type `!play`,
+  specifies gamemode (for now, just controls number of rounds in a game) (not important for now)
+    "basic" is 1 round per game
+    "twoturn" is 2 rounds per game (not important for now)
+TellMe will connect to the author's location,
+  query the channel for the list of users,
+  clear any TellMe game roles ("canvote" & "speaking"),
+  assign a random play order,
+  announce the play order,
+  move into the "speaking" voice & text channel
+gameloop begins (individual turns of all players forming a round),
+  TellMe knows the k'th player,
+  gives them the "speaking" role,
+  moves them into the "speaking" channels,
+  gives them the rundown:
+    f"The last sentence was: {ls}" if k!=0 else f"Tell me a {genre} story set in {location} with {item}"
+    f"Your prompt words are: {' '.join(prompts)}"
+    f"You will have {T} seconds to tell me a story. When there are ten seconds remaining, an alert will play."
+    f"Your {T} seconds starts, now."
+  records for 90s (bgm optional),
+    alert at 10s remaining,
+  announces that time is up,
+    assigns them the "canvote" role,
+    invites them to move back to the lobby and look at the voting text channel to vote momentatily,
+    forcefully moves them and removes "speaking" role,
+  runs recording through extractor,
+  puts keywords up for voting,
+    message with reacts 1 through 10,
+    alert those in lobby by text and voice that they have 20s to vote,
+    wait 20s,
+    tally votes,
+    `prompts = ` top 4 (ties settled by random sample),
+    thank those who voted and delete the vote message,
+  loop,
+end of round,
+  unassigns "canvote" role,
+  (that's all for now), 
+end of game,
+  report back the combined story,
+    including TellMe's rundown and the votes
+  upload stitched together audio (.opus in a .webm for discord embedding?),
+  thank,
+  cleanup,
+    remove TellMe game roles,
+disconnect from voice.
