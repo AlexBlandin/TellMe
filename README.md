@@ -18,4 +18,16 @@ Have a `token.txt` file available that has your Discord Bot token.
 
 ## Running
 
-While in the poetry shell, use `$ poetry run python3.7 tellme.py`
+While in the poetry shell, use `$ poetry run python3 tellme.py`
+
+The bot is online and, if connected to your server, will login. Type `!play` when all players are in voice-chat with you and the game will commence. (TEMP: Assuming roles and channel names, a todo is to have the bot perform all setup)
+
+### Style-guide
+
+- Strings use `"`, not `'`, such as `"hello, world"`
+  - I'm a C programmer, `'` means single character to me
+- f-strings `f"` are preferred and superior, `.format()` only if absolutely necessary
+  - `'` are allowed in f-strings to aid nesting / avoid `f"""` everywhere, nowhere else
+- Indentation is 2-space and only 2-space, 4 is right out, 8 is insane, and if I see a tab then python will crash
+- Please have a space after any comments, `# NOTE:` is more readable than `#NOTE:`
+- That's it, really, I just like a little consistency and cleanliness
