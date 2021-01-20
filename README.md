@@ -1,5 +1,5 @@
 # TellME
-CSCM69 Group Project
+Voice-Assistant inspired Improv + Chinese-Whispers concept
 
 > TELLME.PY
 > AIN'T NOTHING BUT A HEARTACHE
