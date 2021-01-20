@@ -18,7 +18,7 @@ import importlib
 from ctypes.util import find_library
 from time import time
 from typing import List
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from math import isfinite
 from datetime import datetime
 from subprocess import run, PIPE
@@ -252,7 +252,10 @@ class TellMe(commands.Cog):
     await asyncio.sleep(3)
     await self.say(ctx, msg="./audio/pre/i-hope-you-enjoyed.wav")
     
-    c = Path(f"./audio/c{ulid.generate()}.txt")
+    # WARNING: Changed Path to PurePosixPath as otherwise was getting problems on my machine. Shouldn't affect your machine
+    # Also added a extra str() for c as I think that was needed
+    
+    c = PurePosixPath(f"./audio/c{ulid.generate()}.txt")
     with open(c, "w+") as w:
       w.write("\n".join([f"file '{str(audio_file.parent.name)}/{audio_file.name}'" for audio_file in self.audio_files]))
       w.write("\n")
@@ -378,6 +381,7 @@ class TellMe(commands.Cog):
     "Move a user back to the lobby"
     await user.move_to(self.Vlobby)
 
+# WARNING: Might need to check this I added manage roles as I think it was a necessary permission but not sure. If so, the permission number needs updating.
 # permissions 53540928: send messages ... attach files, add reactions, connect, speak, move members, use voice activity
 
 # Intents necessary for TellMe.py at this moment
