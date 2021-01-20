@@ -16,7 +16,7 @@ Install `libopus0`/`libopus` (depending on system) and `ffmpeg`.
 
 Have a `token.txt` file available that has your Discord Bot token, and an `owner.txt` file with your Discord User ID.
 
-Currently, these are the expected permissions (321976400):
+Naturally, the bot needs to be invited to the server. Currently, these are the expected permissions (321976400):
 
 ![](./permissions.png)
 
