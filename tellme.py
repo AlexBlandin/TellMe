@@ -17,7 +17,7 @@ import logging
 import importlib
 from time import time
 from typing import List
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from math import isfinite
 from datetime import datetime
 from subprocess import run, PIPE
@@ -49,10 +49,15 @@ from extractor import Extractor
 extractor = Extractor()
 
 # On Debian-likes, this is where libopus will install
-lib = next(Path("/usr/lib/x86_64-linux-gnu/").glob("libopus.so.*"))
-discord.opus.load_opus(lib)
+
+
+# WARNING: This does not work on my machine. I believe discord.opus.load_opus('opus') should work on most machines otherwise
+# try manually calling with ctypes.util.find_library('opus')
+
+# lib = next(Path("/usr/lib/x86_64-linux-gnu/").glob("libopus.so.*"))
+discord.opus.load_opus('opus')
 if not discord.opus.is_loaded():
-  raise ModuleNotFoundError(f"Tried to load {str(lib)} but failed, TellMe.py is unable to run", name="libopus", path=lib)
+    raise ModuleNotFoundError(f"Tried to load {str(lib)} but failed, TellMe.py is unable to run", name="libopus", path=lib)
 
 ulid = ULID()
 logger = logging.getLogger("discord")
@@ -253,12 +258,16 @@ class TellMe(commands.Cog):
     await asyncio.sleep(3)
     await self.say(ctx, msg="./audio/pre/i-hope-you-enjoyed.wav")
     
-    c = Path(f"./audio/c{ulid.generate()}.txt")
+    # WARNING: Changed Path to PurePosixPath as otherwise was getting problems on my machine. Shouldn't affect your machine
+    # Also added a extra str() for c as I think that was needed
+    
+    c = PurePosixPath(f"./audio/c{ulid.generate()}.txt")
     with open(c, "w+") as w:
       w.write("\n".join([f"file '{str(audio_file.parent.name)}/{audio_file.name}'" for audio_file in self.audio_files]))
       w.write("\n")
-    u = Path(f"./audio/session-{datetime.now():%Y-%m-%d-%H-%M-%S}.m4a")
-    run(["ffmpeg", "-f", "concat", "-safe", "0", "-loglevel", "panic", "-i", c, str(u)])
+    u = PurePosixPath(f"./audio/session-{datetime.now():%Y-%m-%d-%H-%M-%S}.m4a")
+    
+    run(["ffmpeg", "-f", "concat", "-safe", "0", "-loglevel", "panic", "-i", str(c), str(u)])
 
     await self.say(ctx, msg="./audio/pre/thank-you-for-playing.wav")
     await self.Tlobby.send("Thank you for playing Tell Me, attached is the session recording", file=discord.File(str(u)))
@@ -379,6 +388,7 @@ class TellMe(commands.Cog):
     "Move a user back to the lobby"
     await user.move_to(self.Vlobby)
 
+# WARNING: Might need to check this I added manage roles as I think it was a necessary permission but not sure. If so, the permission number needs updating.
 # permissions 53540928: send messages ... attach files, add reactions, connect, speak, move members, use voice activity
 
 # Intents necessary for TellMe.py at this moment
@@ -396,7 +406,10 @@ async def on_ready():
   print("------")
 
 bot.add_cog(TellMe(bot))
-bot.owner_id = 234272777446621185
+
+# WARNING: Added in reading the owner from text file. Means we can both develop on our own dev accounts
+with open("owner.txt","r") as o: OWNER=o.read().strip()
+bot.owner_id = OWNER
 
 @commands.is_owner()
 @bot.command()

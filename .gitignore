@@ -11,6 +11,7 @@ audio/temp/
 
 # Discord Token
 token.txt
+owner.txt
 
 # C extensions
 *.so
