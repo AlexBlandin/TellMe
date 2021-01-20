@@ -26,6 +26,8 @@ While in the poetry shell, use `$ poetry run python3 tellme.py`
 
 The bot is online and, if connected to your server, will login. Type `!play` when all players are in voice-chat with you and the game will commence. (TEMP: Assuming roles and channel names, a todo is to have the bot perform all setup)
 
+***
+
 ### Style-guide
 
 - Strings use `"`, not `'`, such as `"hello, world"`
