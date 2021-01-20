@@ -117,7 +117,13 @@ class TellMe(commands.Cog):
     self.Vlobby, self.Vtalking = None, None # Voice Channels
     self.Tlobby, self.Tvoting = None, None # Text Channel
     self.Rcanvote, self.Rspeaking = None, None # Roles
+    self.players = []
     self.rounds, self.T = 1, 90
+    self.round, self.turn = 0, 0
+    self.prompts, self.last = [], ""
+    self.genre, self.location, self.item = "", "", ""
+    self.keywords = []
+    self.audio_files = []
     seed(time())
 
   @commands.command()
@@ -132,7 +138,7 @@ class TellMe(commands.Cog):
     await self.alert(ctx)
   
   @commands.command()
-  async def roudns(self, ctx: Context, *, n: int):
+  async def setrounds(self, ctx: Context, *, n: int):
     self.rounds = max(1, int(n))
     await ctx.send(f"Now playing for {self.rounds} rounds")
   
@@ -147,12 +153,6 @@ class TellMe(commands.Cog):
       return await ctx.send("Not connected to a voice channel.")
     ctx.voice_client.source.volume = int(volume / 100)
     await ctx.send(f"Changed volume to {int(volume)}%")
-
-  async def alert(self, ctx: Context):
-    track = Path(f"./audio/sfx/{sample(SFX,1)[0]}")
-    shuffle(SFX)
-    source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(track))
-    ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
 
   @commands.command()
   async def stop(self, ctx: Context):
@@ -184,23 +184,6 @@ class TellMe(commands.Cog):
         ctx.voice_client.play(player, after=lambda e: print(f"Player error: {e}") if e else None)
 
       await ctx.send(f"Now playing: {player.title}")
-
-  @commands.command()
-  async def say(self, ctx: Context, *, msg: str):
-    if msg[:12] == "./audio/pre/":
-      f = Path(msg) # pre-recorded
-    else:
-      ul = ulid.generate()
-      f = Path(f"./audio/rec/r{ul}.wav")
-      m = Path(f"./audio/rec/r{ul}.mp3")
-      gTTS(msg).save(str(m))
-      run(["ffmpeg", "-loglevel", "panic", "-i", str(m), str(f)])
-      # m.unlink()
-    wait = float(json.loads(run(["ffprobe", "-i", str(f), "-loglevel", "quiet", "-print_format", "json", "-show_streams"], encoding="utf-8", stdout=PIPE).stdout)["streams"][0]["duration"]) + 0.5
-    source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(f))
-    ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
-    await asyncio.sleep(wait) # wait for speech to pass
-    return f
 
   @commands.command()
   async def play(self, ctx: Context):
@@ -266,135 +249,193 @@ class TellMe(commands.Cog):
     await self.say(ctx, msg="./audio/pre/welcome-to-tellme.wav")
     # await self.join(ctx, channel=None)
     vc = ctx.voice_client
-    players = vc.channel.members
-    players = [player for player in players if player.bot==False]
-    shuffle(players)
-    players: List[Member]
-    for player in players:
+    
+    self.players = vc.channel.members
+    self.players = [player for player in self.players if player.bot==False]
+    shuffle(self.players)
+    self.players: List[Member]
+    for player in self.players:
       await player.remove_roles(self.Rspeaking, self.Rcanvote)
     print(),print(),print(),print()
-    turn_order = f"The turn order is: {' then '.join([player.display_name for player in players])}"
+    turn_order = f"The turn order is: {' then '.join([player.display_name for player in self.players])}"
     print(turn_order)
     print(),print(),print(),print()
     await ctx.send(turn_order)
     await self.say(ctx, msg=turn_order)
     await self.say(ctx, msg="./audio/pre/i-shall-begin-shortly.wav")
+    
     await asyncio.sleep(0.5)
     await self.goto_talking(ctx)
+    await asyncio.sleep(5)
     
-    await asyncio.sleep(5) # wait to see if it moves
+    self.genre = sample(["Action", "Animation", "Comedy", "Crime", "Experimental", "Fantasy", "Historical ", "Horror", "Romance", "Sci-fi", "Romance", "Thriller", "Western", "Psychological"], 1)
+    self.location = sample(["Farm", "Palace", "Kingdom", "Paris", "Jungle", "Desert ", "Field", "Town", "City", "London", "Italy", "Spain", "Germany", "Portugal", "Poland", "Dubai", "Las Vegas", "California ", "Cardiff"], 1)
+    self.item = sample(["cup", "phone", "microphone", "pen", "paper", "computer", "mantle", "guitar", "map", "pill", "sword", "gun", "knife", "nuts", "coal", "steel", "brick", "rope", "foil", "kettle", "headphones"], 1)
+    self.prompts, self.last = [], ""
     
-    genre = sample(["Action", "Animation", "Comedy", "Crime", "Experimental", "Fantasy", "Historical ", "Horror", "Romance", "Sci-fi", "Romance", "Thriller", "Western", "Psychological"], 1)
-    location = sample(["Farm", "Palace", "Kingdom", "Paris", "Jungle", "Desert ", "Field", "Town", "City", "London", "Italy", "Spain", "Germany", "Portugal", "Poland", "Dubai", "Las Vegas", "California ", "Cardiff"], 1)
-    item = sample(["cup", "phone", "microphone", "pen", "paper", "computer", "mantle", "guitar", "map", "pill", "sword", "gun", "knife", "nuts", "coal", "steel", "brick", "rope", "foil", "kettle", "headphones"], 1)
-    prompts, last = [], ""
-    
-    audio_files = [] # in order of occurence
+    self.audio_files = [] # in order of occurence
     
     # Gameloop
-    for r in range(min(1,self.rounds)):
-      print(f"Round {r}")
+    for _round in range(min(1,self.rounds)):
+      self.round = _round
+      print(f"Round {self.round}")
       # Roundloop
-      for i, player in enumerate(players):
+      for _turn, player in enumerate(self.players):
+        self.turn = _turn
         await self.bring_to_me(ctx, player)
         await player.add_roles(self.Rspeaking)
         await asyncio.sleep(5) # wait to see if it moves
+        
         print("Rundown")
-        if i == 0 and r == 0:
-          s = await self.say(ctx, msg=f"Tell me a {genre} story set in {location} with {'' if item[-1]=='s' else 'an' if item[0] in 'aeiouh' else 'a'} {item}")
-          audio_files.append(s)
+        if self.turn == 0 and self.round == 0:
+          s = await self.say(ctx, msg=f"Tell me a {self.genre} story set in {self.location} with {'' if self.item[-1]=='s' else 'an' if self.item[0] in 'aeiouh' else 'a'} {self.item}")
+          self.audio_files.append(s)
         else:
-          s = await self.say(ctx, msg=f"The last sentence was. {last}.")
-          audio_files.append(s)
+          s = await self.say(ctx, msg=f"The last sentence was. {self.last}.")
+          self.audio_files.append(s)
           print("Prompts:")
-          print(prompts)
-          s = await self.say(ctx, msg=f"Your prompt words are. {', '.join(prompts)}.")
-          audio_files.append(s)
+          print(self.prompts)
+          s = await self.say(ctx, msg=f"Your prompt words are. {', '.join(self.prompts)}.")
+          self.audio_files.append(s)
         print("Get ready")
+        
         time = max(15,int(self.T))
         s = await self.say(ctx, msg=f"You will have {time} seconds to tell me a story. You should hear an alert when there are ten seconds remaining. Your {time} seconds starts, now.")
-        audio_files.append(s)
-        print("Start")
-        # Start recording
-        vc = ctx.voice_client
-        recording = recording_folder / f"r{ulid.generate()}.wav"
-        recording.touch(exist_ok=True)
-        print(f"Recording {time}s in {str(recording)}")
-        vc.listen(discord.WaveSink(str(recording)))
-        await asyncio.sleep(time-10)
-        await self.alert(ctx)
-        await asyncio.sleep(10)
-        # Done, we can stop momentarily
-        if ctx.voice_client.is_playing():
-          ctx.voice_client.stop()
-        s = await self.say(ctx, msg="./audio/pre/your-time-is-up.wav")
-        if i != len(players)-1:
-          await self.say(ctx, msg="./audio/pre/momentarily-you-will-be.wav")
-        else:
-          await self.say(ctx, msg="./audio/pre/the-round-has-ended.wav")
-        await asyncio.sleep(5)
-        vc.stop_listening()
-        resampled, sr = librosa.load(str(recording), sr=24000)
-        sf.write(str(recording), resampled, sr, subtype="PCM_16", endian="LITTLE")
+        self.audio_files.append(s)
+        
+        recording = await self.record(ctx, resample=True)
+        
         await player.add_roles(self.Rcanvote)
         await self.move_back(ctx, player)
-        audio_files.append(recording)
-        audio_files.append(s)
         await player.remove_roles(self.Rspeaking)
-        print(),print(),print(),print()
-        print(f"Recording complete {str(recording)}")
-        print(),print(),print(),print()
-        keywords, last = extractor.extract(str(recording))
-        if i != len(players)-1:
-          ping = await self.Tvoting.send("Please vote on the following prompts by selecting the corresponding number:")
-          message = await self.Tvoting.send(" ".join([f"{i}. {p} " for i, p in enumerate(keywords,start=1)]))
-          message: Message
-          reactions = {}
-          for k, (n, e) in zip(keywords, enumerate(["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"])):
-            await message.add_reaction(e)
-            await asyncio.sleep(0.5)
-            reactions[e] = n
-            print(k, end=" ")
-          print()
-          await asyncio.sleep(20) # 20s voting period for voting
-          message = await self.Tvoting.fetch_message(message.id); message: Message # update message
-          reacts = message.reactions; reacts: List[Reaction]
-          prompts = [keywords[reactions[react.emoji]] for react in sorted(reacts, key= lambda react: react.count, reverse=True)[:4]]
-          print("Voted for:")
-          print(prompts)
-          if len(prompts)<4:
-            print("Stopgap means:")
-            prompts += sample([kw for kw in keywords if kw not in prompts], 4-len(prompts))
-            print(prompts)
-          thanks = await self.Tvoting.send("Thank you for voting")
-          await message.delete(delay=2)
-          await ping.delete(delay=2)
-          await thanks.delete(delay=10)
+        
+        self.keywords, self.last = extractor.extract(str(recording))
+        if self.turn != len(self.players)-1:    
+          await self.vote(ctx, keywords=self.keywords)
+      
       # Round cleanup
-      for player in players:
+      for player in self.players:
         await player.remove_roles(self.Rcanvote)
         await player.remove_roles(self.Rspeaking)
+      
       # await self.goto_lobby(ctx)
       # await self.say(ctx, msg="./audio/pre/the-round-has-concluded.wav")
+    
     # Game wrapup
     await self.goto_lobby(ctx)
     await asyncio.sleep(3)
     await self.say(ctx, msg="./audio/pre/i-hope-you-enjoyed.wav")
+    
     c = Path(f"./audio/c{ulid.generate()}.txt")
     with open(c, "w+") as w:
-      w.write("\n".join([f"file '{str(audio_file.parent.name)}/{audio_file.name}'" for audio_file in audio_files]))
+      w.write("\n".join([f"file '{str(audio_file.parent.name)}/{audio_file.name}'" for audio_file in self.audio_files]))
       w.write("\n")
     u = Path(f"./audio/session-{datetime.now():%Y-%m-%d-%H-%M-%S}.m4a")
     run(["ffmpeg", "-f", "concat", "-safe", "0", "-loglevel", "panic", "-i", c, str(u)])
-    print(),print(),print(),print()
-    print("Done! Session recording at", str(u))
-    print(),print(),print(),print()
+
     await self.say(ctx, msg="./audio/pre/thank-you-for-playing.wav")
     await self.Tlobby.send("Thank you for playing Tell Me, attached is the session recording", file=discord.File(str(u)))
+    
     # Game cleanup
-    for player in players:
+    for player in self.players:
         await player.remove_roles(self.Rcanvote, self.Rspeaking)
+        
+    print("And we're done, disconnecting now")
     await ctx.voice_client.disconnect()
+
+  @bgm.before_invoke
+  @play.before_invoke
+  async def ensure_voice(self, ctx: Context):
+    if ctx.voice_client is None:
+      if ctx.author.voice:
+        await ctx.author.voice.channel.connect()
+      else:
+        await ctx.send("I do not know which voice channel to join.")
+        raise commands.CommandError("Unspecified voice channel.")
+    elif ctx.voice_client.is_playing():
+      ctx.voice_client.stop()
+
+  async def say(self, ctx: Context, msg: str):
+    if msg[:12] == "./audio/pre/":
+      f = Path(msg) # pre-recorded
+    else:
+      ul = ulid.generate()
+      f = Path(f"./audio/rec/r{ul}.wav")
+      m = Path(f"./audio/rec/r{ul}.mp3")
+      gTTS(msg).save(str(m))
+      run(["ffmpeg", "-loglevel", "panic", "-i", str(m), str(f)])
+      # m.unlink()
+    wait = float(json.loads(run(["ffprobe", "-i", str(f), "-loglevel", "quiet", "-print_format", "json", "-show_streams"], encoding="utf-8", stdout=PIPE).stdout)["streams"][0]["duration"]) + 0.5
+    source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(f))
+    ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
+    await asyncio.sleep(wait) # wait for speech to pass
+    return f
+
+  async def record(self, ctx: Context, resample=True):
+    # Start recording
+    print("Start")
+    vc = ctx.voice_client
+    recording = recording_folder / f"r{ulid.generate()}.wav"
+    recording.touch(exist_ok=True)
+    time = max(15,int(self.T))
+    print(f"Recording {time}s in {str(recording)}")
+    vc.listen(discord.WaveSink(str(recording)))
+    await asyncio.sleep(time-10)
+    await self.alert(ctx)
+    await asyncio.sleep(10)
+    # Done, we can stop momentarily
+    if ctx.voice_client.is_playing():
+      ctx.voice_client.stop()
+    s = await self.say(ctx, msg="./audio/pre/your-time-is-up.wav")
+    if self.turn != len(self.players)-1:
+      await self.say(ctx, msg="./audio/pre/momentarily-you-will-be.wav")
+    else:
+      await self.say(ctx, msg="./audio/pre/the-round-has-ended.wav")
+    await asyncio.sleep(5)
+    vc.stop_listening()
+    if resample: # resample so that we can stitch with gTTS output, if that is not done, then can be avoided
+      resampled, sr = librosa.load(str(recording), sr=24000)
+      sf.write(str(recording), resampled, sr, subtype="PCM_16", endian="LITTLE")
+    self.audio_files.append(recording)
+    self.audio_files.append(s)
+    print(),print(),print(),print()
+    print(f"Recording complete {str(recording)}")
+    print(),print(),print(),print()
+    return recording
+
+  async def vote(self, ctx: Context, keywords=None):
+    if keywords is not None and keywords is not [] and keywords != self.keywords:
+      self.keywords = keywords
+    ping = await self.Tvoting.send("Please vote on the following prompts by selecting the corresponding number:")
+    message = await self.Tvoting.send(" ".join([f"{i}. {p} " for i, p in enumerate(self.keywords,start=1)]))
+    message: Message
+    reactions = {}
+    for k, (n, e) in zip(self.keywords, enumerate(["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"])):
+      await message.add_reaction(e)
+      await asyncio.sleep(0.5)
+      reactions[e] = n
+      print(k, end=" ")
+    print()
+    await asyncio.sleep(20) # 20s voting period for voting
+    message = await self.Tvoting.fetch_message(message.id); message: Message # update message
+    reacts = message.reactions; reacts: List[Reaction]
+    self.prompts = [self.keywords[reactions[react.emoji]] for react in sorted(reacts, key= lambda react: react.count, reverse=True)[:4]]
+    print("Voted for:")
+    print(self.prompts)
+    if len(self.prompts)<4:
+      print("Stopgap means:")
+      self.prompts += sample([kw for kw in self.keywords if kw not in self.prompts], 4-len(self.prompts))
+      print(self.prompts)
+    thanks = await self.Tvoting.send("Thank you for voting")
+    await message.delete(delay=2)
+    await ping.delete(delay=2)
+    await thanks.delete(delay=10)
+
+  async def alert(self, ctx: Context):
+    track = Path(f"./audio/sfx/{sample(SFX,1)[0]}")
+    shuffle(SFX)
+    source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(track))
+    ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
 
   async def goto_lobby(self, ctx: Context):
     await ctx.voice_client.move_to(self.Vlobby)
@@ -410,18 +451,6 @@ class TellMe(commands.Cog):
   async def move_back(self, ctx: Context, user: discord.Member):
     "Move a user back to the lobby"
     await user.move_to(self.Vlobby)
-  
-  @bgm.before_invoke
-  @play.before_invoke
-  async def ensure_voice(self, ctx: Context):
-    if ctx.voice_client is None:
-      if ctx.author.voice:
-        await ctx.author.voice.channel.connect()
-      else:
-        await ctx.send("I do not know which voice channel to join.")
-        raise commands.CommandError("Unspecified voice channel.")
-    elif ctx.voice_client.is_playing():
-      ctx.voice_client.stop()
 
 intent = discord.Intents.default()
 # intent: discord.Intents
