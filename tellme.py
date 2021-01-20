@@ -15,6 +15,7 @@ import os
 import json
 import logging
 import importlib
+from ctypes.util import find_library
 from time import time
 from typing import List
 from pathlib import Path
@@ -48,11 +49,9 @@ from ytdl import YTDLSource
 from extractor import Extractor
 extractor = Extractor()
 
-# On Debian-likes, this is where libopus will install
-lib = next(Path("/usr/lib/x86_64-linux-gnu/").glob("libopus.so.*"))
-discord.opus.load_opus(lib)
+discord.opus.load_opus("opus")
 if not discord.opus.is_loaded():
-  raise ModuleNotFoundError(f"Tried to load {str(lib)} but failed, TellMe.py is unable to run", name="libopus", path=lib)
+  raise ModuleNotFoundError(f"Tried to load opus but failed, so TellMe.py is unable to run", name="opus")
 
 ulid = ULID()
 logger = logging.getLogger("discord")
@@ -258,7 +257,7 @@ class TellMe(commands.Cog):
       w.write("\n".join([f"file '{str(audio_file.parent.name)}/{audio_file.name}'" for audio_file in self.audio_files]))
       w.write("\n")
     u = Path(f"./audio/session-{datetime.now():%Y-%m-%d-%H-%M-%S}.m4a")
-    run(["ffmpeg", "-f", "concat", "-safe", "0", "-loglevel", "panic", "-i", c, str(u)])
+    run(["ffmpeg", "-f", "concat", "-safe", "0", "-loglevel", "panic", "-i", c, u])
 
     await self.say(ctx, msg="./audio/pre/thank-you-for-playing.wav")
     await self.Tlobby.send("Thank you for playing Tell Me, attached is the session recording", file=discord.File(str(u)))
@@ -290,9 +289,9 @@ class TellMe(commands.Cog):
       f = Path(f"./audio/rec/r{ul}.wav")
       m = Path(f"./audio/rec/r{ul}.mp3")
       gTTS(msg).save(str(m))
-      run(["ffmpeg", "-loglevel", "panic", "-i", str(m), str(f)])
+      run(["ffmpeg", "-loglevel", "panic", "-i", m, f])
       # m.unlink()
-    wait = float(json.loads(run(["ffprobe", "-i", str(f), "-loglevel", "quiet", "-print_format", "json", "-show_streams"], encoding="utf-8", stdout=PIPE).stdout)["streams"][0]["duration"]) + 0.5
+    wait = float(json.loads(run(["ffprobe", "-i", f, "-loglevel", "quiet", "-print_format", "json", "-show_streams"], encoding="utf-8", stdout=PIPE).stdout)["streams"][0]["duration"]) + 0.5
     source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(f))
     ctx.voice_client.play(source, after=lambda e: print(f"Player error: {e}") if e else None)
     await asyncio.sleep(wait) # wait for speech to pass
@@ -396,7 +395,6 @@ async def on_ready():
   print("------")
 
 bot.add_cog(TellMe(bot))
-bot.owner_id = 234272777446621185
 
 @commands.is_owner()
 @bot.command()
@@ -406,4 +404,6 @@ async def logout(ctx):
   await ctx.bot.logout()
 
 with open("token.txt","r") as o: TOKEN=o.read().strip()
+with open("owner.txt","r") as o: OWNER=int(o.read().strip())
+bot.owner_id = OWNER or 234272777446621185
 bot.run(TOKEN)
