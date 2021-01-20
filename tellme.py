@@ -35,10 +35,6 @@ from extractor import Extractor
 
 # permissions 53540928: send messages ... attach files, add reactions, connect, speak, move members, use voice activity
 
-# refactor into `!play` command that triggers everything, TellMe cog is automated otherwise
-
-
-
 # lib = next(Path("/").rglob("libopus.so*"))
 lib = Path("/usr/lib/x86_64-linux-gnu/libopus.so.0.7.0")
 discord.opus.load_opus(lib)
