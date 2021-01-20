@@ -10,7 +10,7 @@ audio/*.m4a
 audio/temp/
 
 # Discord Token
-tellme-token.txt
+token.txt
 
 # C extensions
 *.so
