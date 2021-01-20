@@ -49,9 +49,7 @@ from extractor import Extractor
 extractor = Extractor()
 
 # On Debian-likes, this is where libopus will install
-lib = Path("/usr/lib/x86_64-linux-gnu/libopus.so.0.7.0")
-if not lib.exists():
-  lib = next(Path("/usr/lib/x86_64-linux-gnu/").glob("libopus.so.*"))
+lib = next(Path("/usr/lib/x86_64-linux-gnu/").glob("libopus.so.*"))
 discord.opus.load_opus(lib)
 print(f"Audio working" if discord.opus.is_loaded() else "Uh oh", str(lib))
 
