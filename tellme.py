@@ -407,6 +407,6 @@ async def logout(ctx):
   await ctx.bot.logout()
 
 with open("token.txt","r") as o: TOKEN=o.read().strip()
-with open("owner.txt","r") as o: OWNER=int(o.read().strip())
-bot.owner_id = OWNER or 234272777446621185
+with open("owner.txt","r") as o: OWNER={int(l.strip()) for l in o.readlines()} # 1 per line
+bot.owner_ids = OWNER or {234272777446621185}
 bot.run(TOKEN)
