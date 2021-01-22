@@ -100,6 +100,7 @@ class TellMe(commands.Cog):
     shuffle(self.SFX)
     shuffle(self.BGM)
 
+  @commands.is_owner()
   @commands.command()
   async def join(self, ctx: Context, *, channel: discord.VoiceChannel):
     """Joins a voice channel"""
