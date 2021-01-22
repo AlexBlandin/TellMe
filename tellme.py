@@ -402,7 +402,7 @@ bot.add_cog(TellMe(bot))
 @commands.is_owner()
 @bot.command()
 async def logout(ctx):
-  if ctx.voice_client != None:
+  if ctx.voice_client is not None:
     await ctx.voice_client.disconnect()
   await ctx.bot.logout()
 
