@@ -60,12 +60,14 @@ handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w"
 handler.setFormatter(logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s"))
 logger.addHandler(handler)
 
-recording_folder = Path("./audio/rec/")
-recording_folder.mkdir(parents=True, exist_ok=True)
-
 class TellMe(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
+    # TODO: Setup talking & voting as separate channels (can delete?)
+    #       Lobbies are wherever they're called from
+    # TODO: Setup roles
+    # TODO: Get genre,location,item from files
+    # TODO: Gamemodes & templates from files would be nice, but need to do something for that... dict we can pass to a `.setrules(template,**gm)`
     self.Vlobby, self.Vtalking = None, None # Voice Channels
     self.Tlobby, self.Tvoting = None, None # Text Channel
     self.Rcanvote, self.Rspeaking = None, None # Roles
@@ -305,6 +307,8 @@ class TellMe(commands.Cog):
     # Start recording
     print("Start")
     vc = ctx.voice_client
+    recording_folder = Path("./audio/rec/")
+    recording_folder.mkdir(parents=True, exist_ok=True)
     recording = recording_folder / f"r{ulid.generate()}.wav"
     recording.touch(exist_ok=True)
     time = max(15,int(self.T))
