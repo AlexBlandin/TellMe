@@ -1,5 +1,5 @@
 # TellMe
-Voice-Assistant inspired Improv + Chinese-Whispers concept
+Voice-Assistant based Improv + Chinese-Whispers concept
 
 > TELLME.PY
 > AIN'T NOTHING BUT A HEARTACHE
