@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "TellMe"
-version = "0.1.0"
-description = ""
-authors = ["Your Name <you@example.com>"]
+version = "1.0.0"
+description = "An Discord Bot implementation of TellMe"
+authors = ["Alex Blandin", "Adam Cook", "Ibrahim Al-Jeffery", "Ibukun Olatunji"]
 
 [tool.poetry.dependencies]
 python = "~3.7 || ~3.8"
