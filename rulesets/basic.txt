@@ -39,7 +39,7 @@ end of round,
 end of game,
   report back the combined story,
     including TellMe's rundown and the votes
-  upload stitched together audio (.opus in a .webm for discord embedding?),
+  upload stitched together audio,
   thank,
   cleanup,
     remove TellMe game roles,

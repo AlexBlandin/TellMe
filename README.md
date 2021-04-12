@@ -1,14 +1,11 @@
 # TellME
-Voice-Assistant inspired Improv + Chinese-Whispers concept
+> Voice-Assistant inspired Improv + Chinese-Whispers concept
 
-> TELLME.PY
-> AIN'T NOTHING BUT A HEARTACHE
-> TELLME.PY
-> AIN'T NOTHING BUT A MISTAKE
+Example session recording based on the `basic` ruleset provided.
 
 ## Installation
 
-Ensure [Python3.7](https://python.org/) is installed. Tentatively, Python3.8 should work, but because Tensorflow is awkward we can't just blanket say "Python3.7 or later", since 3.9 doesn't work for now.
+Ensure [Python3.7](https://python.org/) is installed. Tentatively, Python3.8 should work, but because Tensorflow is awkward we can't just blanket say "Python3.7 or later", since 3.9 doesn't work until (hopefully) Tensorflow 2.5.
 
 Install [Poetry](https://python-poetry.org/), open the `$ poetry shell` in the project directory (handles venv etc.), and use `$ poetry install`.
 
@@ -31,7 +28,7 @@ The bot is online and, if connected to your server, will login. Type `!play` whe
 ### Style-guide
 
 - Strings use `"`, not `'`, such as `"hello, world"`
-  - I'm a C programmer, `'` means single character to me
+  - I'm a C programmer, `'` means a single character to me
 - f-strings `f"` are preferred and superior, `.format()` only if absolutely necessary
   - `'` are allowed in f-strings to aid nesting / avoid `f"""` everywhere, nowhere else
 - Indentation is 2-space and only 2-space, 4 is right out, 8 is insane, and if I see a tab then python will crash
