@@ -25,12 +25,25 @@ The bot is online and, if connected to your server, will login. Type `!play` whe
 
 ***
 
-### Style-guide
+### Citing TellMe
+
+```bib
+@misc{
+  author={Ibrahim Al-Jeffery, Alex Blandin, Adam Cook, Ibukun Olatunji, Simon Robinson},
+  title={{TellMe -- Voice-Assistant based Improv}},
+  url = {https://github.com/AlexBlandin/TellMe},
+  howpublished = {{available} at \url{https://github.com/AlexBlandin/TellMe}}
+}
+```
+
+***
+
+### Style-guide for pull requests
 
 - Strings use `"`, not `'`, such as `"hello, world"`
   - Alex is a C programmer, `'` means a single character to them
 - f-strings `f"` are preferred and superior, `.format()` only if absolutely necessary
   - `'` are allowed in f-strings to aid nesting / avoid `f"""` everywhere, nowhere else
-- Indentation is 2-space and only 2-space, 4 is right out, 8 is insane, and if Python sees a tab then it will crash
+- Indentation is 2-space, non-mixed, avoid tab characters or Python will crash
 - Please have a space after any comments, `# NOTE:` is more readable than `#NOTE:`
 - That's it, really, we just like a little consistency and cleanliness
