@@ -5,7 +5,7 @@ Example session recording based on the `basic` ruleset provided.
 
 ## Installation
 
-Ensure [Python3.7](https://python.org/) is installed. Tentatively, Python3.8 should work, but because Tensorflow is awkward we can't just blanket say "Python3.7 or later", since 3.9 doesn't work until (hopefully) Tensorflow 2.5.
+Ensure [Python3.7 or above](https://python.org/) is installed. Tensorflow 2.5 supports Python 3.9. Python 3.10 will probably break this again.
 
 Install [Poetry](https://python-poetry.org/), open the `$ poetry shell` in the project directory (handles `venv` etc.), and use `$ poetry install`.
 
