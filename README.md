@@ -5,9 +5,9 @@ Example session recording based on the `basic` ruleset provided.
 
 ## Installation
 
-Ensure [Python3.8 or above](https://python.org/) is installed. Tensorflow 2.5 supports Python 3.9. Python 3.10 will probably break this again.
+Ensure [Python >=3.8,<3.10](https://python.org/) is installed.
 
-Install [Poetry](https://python-poetry.org/), open the `$ poetry shell` in the project directory (handles `venv` etc.), and use `$ poetry install`.
+Install [Poetry](https://python-poetry.org/), open the `$ poetry shell` in the project directory (it handles `venv` etc.), and use `$ poetry install`. This should handle everything using the supplied `poetry.lock` file; if you wish to update the dependencies use `$ poetry update`.
 
 Install `libopus0`/`libopus` (depending on system) and `ffmpeg`.
 
