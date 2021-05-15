@@ -5,10 +5,10 @@ description = "An Discord Bot implementation of TellMe"
 authors = ["Alex Blandin", "Adam Cook", "Ibrahim Al-Jeffery", "Ibukun Olatunji"]
 
 [tool.poetry.dependencies]
-python = "~3.7 || ~3.8"
+python = "^3.7"
 parse = "^1.18.0"
 py-ulid = "^1.0.3"
-tensorflow = "2.2.0"
+tensorflow = "^2.2.0"
 youtube_dl = "^2021.1.8"
 "discord.py" = {git = "https://github.com/Gorialis/discord.py", rev = "voice-recv-mk3"}
 SpeechRecognition = "^3.8.1"
