@@ -8,7 +8,7 @@ authors = ["Alex Blandin", "Adam Cook", "Ibrahim Al-Jeffery", "Ibukun Olatunji"]
 python = ">=3.8,<3.10"
 parse = "^1.18.0"
 py-ulid = "^1.0.3"
-tensorflow = "^2.2.0"
+tensorflow = "^2.6.4"
 youtube_dl = "^2021.1.8"
 "discord.py" = {git = "https://github.com/Gorialis/discord.py", rev = "voice-recv-mk3"}
 SpeechRecognition = "^3.8.1"
