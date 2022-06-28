@@ -9,7 +9,7 @@ Ensure [Python >=3.8,<3.10](https://python.org/) is installed.
 
 Install [Poetry](https://python-poetry.org/), open the `$ poetry shell` in the project directory (it handles `venv` etc.), and use `$ poetry install`. This should handle everything using the supplied `poetry.lock` file; if you wish to update the dependencies use `$ poetry update`.
 
-Install `libopus0`/`libopus` (depending on system) and `ffmpeg`.
+Install [`libopus0`](https://packages.debian.org/buster/libopus0)/[`libopus`](https://opus-codec.org) (depending on system) and [`ffmpeg`](https://ffmpeg.org/).
 
 Have a `token.txt` file available that has your Discord Bot token, and an `owner.txt` file with your Discord User ID.
 
@@ -40,10 +40,7 @@ The bot is online and, if connected to your server, will login. Type `!play` whe
 
 ### Style-guide for pull requests
 
-- Strings use `"`, not `'`, such as `"hello, world"`
-  - Alex is a C programmer, `'` means a single character to them
-- f-strings `f"` are preferred and superior, `.format()` only if absolutely necessary
-  - `'` are allowed in f-strings to aid nesting / avoid `f"""` everywhere, nowhere else
-- Indentation is 2-space, non-mixed, avoid tab characters or Python will crash
-- Please have a space after any comments, `# NOTE:` is more readable than `#NOTE:`
-- That's it, really, we just like a little consistency and cleanliness
+We have included `yapf` styling in the `pyproject.toml`, so autoformat with that before contributing. In essense, it's PEP8 with 120 columns. Also, some rules of thumb for strings:
+- Prefer `"` over `'`, such as `"hello, world"`
+- f-strings `f"` are preferred over `.format()`, do not use `"" % x`
+  - `'` are accepted in f-strings to aid nesting (`f"hello {plural('world')}"`)
