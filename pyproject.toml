@@ -1,13 +1,12 @@
 [tool.poetry]
 name = "TellMe"
-version = "1.0.0"
+version = "1.0.1"
 description = "An Discord Bot implementation of TellMe"
 authors = ["Alex Blandin", "Adam Cook", "Ibrahim Al-Jeffery", "Ibukun Olatunji"]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.10"
 parse = "^1.18.0"
-py-ulid = "^1.0.3"
 tensorflow = "^2.6.4"
 youtube_dl = "^2021.1.8"
 "discord.py" = {git = "https://github.com/Gorialis/discord.py", rev = "voice-recv-mk3"}
@@ -19,7 +18,23 @@ PyNaCl = "^1.4.0"
 librosa = "^0.8.0"
 
 [tool.poetry.dev-dependencies]
+yapf = "^0.32.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.yapf]
+based_on_style = "pep8"
+indent_width = 2
+continuation_indent_width = 2
+column_limit = 120
+blank_line_before_nested_class_or_def = false
+blank_lines_around_top_level_definition = 1
+coalesce_brackets = true
+dedent_closing_brackets = true
+indent_dictionary_value = true
+indent_blank_lines = true
+space_between_ending_comma_and_closing_bracket = true
+spaces_around_default_or_named_assign = true
+spaces_before_comment = 1
