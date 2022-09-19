@@ -17,8 +17,11 @@ gTTS = "^2.2.1"
 PyNaCl = "^1.4.0"
 librosa = "^0.8.0"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
+pylint = "^2.14.5"
 yapf = "^0.32.0"
+isort = "^5.10.1"
+pyupgrade = "^2.37.3"
 
 [build-system]
 requires = ["poetry-core"]
@@ -38,3 +41,16 @@ indent_blank_lines = true
 space_between_ending_comma_and_closing_bracket = true
 spaces_around_default_or_named_assign = true
 spaces_before_comment = 1
+
+[tool.isort]
+ensure_newline_before_comments = true
+include_trailing_comma = true
+use_parentheses = true
+comment_prefix = " #"
+multi_line_output = 3
+force_grid_wrap = 0
+reverse_sort = true
+length_sort = true
+line_length = 120
+from_first = true
+indent = "  "
