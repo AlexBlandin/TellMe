@@ -3,9 +3,10 @@ name = "TellMe"
 version = "1.0.1"
 description = "An Discord Bot implementation of TellMe"
 authors = ["Alex Blandin", "Adam Cook", "Ibrahim Al-Jeffery", "Ibukun Olatunji"]
+package-mode = false
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.10"
+python = ">=3.9,<3.10"
 parse = "^1.18.0"
 tensorflow = "^2.6.4"
 youtube_dl = "^2021.1.8"
@@ -18,29 +19,35 @@ PyNaCl = "^1.4.0"
 librosa = "^0.8.0"
 
 [tool.poetry.group.dev.dependencies]
-pylint = "^2.14.5"
-yapf = "^0.32.0"
-isort = "^5.10.1"
-pyupgrade = "^2.37.3"
+ruff = "^0.2.1"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.yapf]
-based_on_style = "pep8"
-indent_width = 2
-continuation_indent_width = 2
-column_limit = 120
-blank_line_before_nested_class_or_def = false
-blank_lines_around_top_level_definition = 1
-coalesce_brackets = true
-dedent_closing_brackets = true
-indent_dictionary_value = true
-indent_blank_lines = true
-space_between_ending_comma_and_closing_bracket = true
-spaces_around_default_or_named_assign = true
-spaces_before_comment = 1
+[tool.ruff]
+indent-width = 2
+target-version = "py310"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["ERA", # code comments actually help 
+  "INP001", # useless before hatch
+  "TD003", # not using github to track todo/issues
+  "S311", # I know when to use secrets
+  "T20", # print is good, actually 
+ "W191", "E111", "E114", "E117", "E203", "D206", "D212", "D300", "Q", "COM812", "COM819", "ISC001", "ISC002", # these are all formatted away
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+quote-style = "double"
+line-ending = "lf"
+indent-style = "space"
+skip-magic-trailing-comma = false
 
 [tool.isort]
 ensure_newline_before_comments = true

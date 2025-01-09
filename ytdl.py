@@ -7,18 +7,23 @@ import youtube_dl
 youtube_dl.utils.bug_reports_message = lambda: ""
 
 ytdl_format_options = {
-    "format": "bestaudio/best",
-    "outtmpl": "audio/temp/%(extractor)s-%(id)s-%(title)s.%(ext)s",
-    "restrictfilenames": True, "noplaylist": True,
-    "nocheckcertificate": True, "ignoreerrors": False,
-    "logtostderr": False, "quiet": True, "no_warnings": True,
-    "default_search": "auto", "source_address": "0.0.0.0"
+  "format": "bestaudio/best",
+  "outtmpl": "audio/temp/%(extractor)s-%(id)s-%(title)s.%(ext)s",
+  "restrictfilenames": True,
+  "noplaylist": True,
+  "nocheckcertificate": True,
+  "ignoreerrors": False,
+  "logtostderr": False,
+  "quiet": True,
+  "no_warnings": True,
+  "default_search": "auto",
+  "source_address": "0.0.0.0",
 }
-ffmpeg_options = {
-  "options": "-vn"
-}
+ffmpeg_options = {"options": "-vn"}
 
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
+
+
 class YTDLSource(discord.PCMVolumeTransformer):
   def __init__(self, source, *, data, volume=0.5):
     super().__init__(source, volume)
